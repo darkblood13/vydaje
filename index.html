@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="cs" data-wallpaper="kobalt">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0C2FBE">
+  <meta name="description" content="Osobní přehled výdajů po měsících, s limitem, kategoriemi, analýzou a importem transakcí.">
+  <title>Výdaje</title>
+  <link rel="icon" href="assets/icon-64.png" type="image/png">
+  <link rel="apple-touch-icon" href="assets/icon-180.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Výdaje">
+  <script>
+    try { var s = JSON.parse(localStorage.getItem('vydaje-app-v2') || 'null'); if (s && s.wallpaper) document.documentElement.dataset.wallpaper = s.wallpaper; } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="styles/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#appContent">Přeskočit na obsah</a>
+  <div id="authGate" class="auth" hidden>
+    <main class="auth-card panel" aria-labelledby="authTitle">
+      <div class="auth-brand"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Výdaje</span></div>
+      <h1 id="authTitle">Přihlášení</h1>
+      <p class="field-help">Výdaje, limity a přehledy na všech tvých zařízeních.</p>
+      <div class="segmented auth-switch" role="group" aria-label="Přihlášení nebo nový účet"><button type="button" data-auth-mode="in" aria-pressed="true">Přihlásit se</button><button type="button" data-auth-mode="up" aria-pressed="false">Vytvořit účet</button></div>
+      <form id="authForm" class="auth-form" novalidate>
+        <label>E-mail<input type="email" name="email" autocomplete="username" inputmode="email" autocapitalize="none" spellcheck="false" required></label>
+        <label>Heslo<input type="password" name="password" autocomplete="current-password" required><span class="field-help" id="authPasswordHelp" hidden>Aspoň 8 znaků.</span></label>
+        <p id="authError" class="auth-message error" role="alert" hidden></p>
+        <p id="authInfo" class="auth-message info" role="status" hidden></p>
+        <button type="submit" id="authSubmit" class="primary-button">Přihlásit se</button>
+        <button type="button" id="authForgot" class="text-button">Zapomenuté heslo</button>
+      </form>
+    </main>
+  </div>
+  <div class="auth-loading" aria-live="polite"><span>Načítám…</span></div>
+  <div class="shell">
+    <aside class="rail">
+      <a class="brand" href="#/overview" aria-label="Výdaje, přehled"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span><span>Výdaje</span></a>
+      <nav class="rail-nav" aria-label="Hlavní nabídka">
+        <a href="#/overview" data-nav="overview"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>Přehled</span></a>
+        <a href="#/transactions" data-nav="transactions"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>Transakce</span></a>
+        <a href="#/analysis" data-nav="analysis"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12m5.3 8V7m5.4 13V4M20 20v-9"/></svg><span>Analýza</span></a>
+        <a href="#/compare" data-nav="compare"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4 3.5 7.5 7 11M3.5 7.5h13M17 13l3.5 3.5L17 20m3.5-3.5h-13"/></svg><span>Porovnání</span></a>
+        <a href="#/add" data-nav="add"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 8v8M8 12h8"/><rect x="3" y="3" width="18" height="18" rx="5"/></svg><span>Přidat / import</span></a>
+        <a href="#/categories" data-nav="categories"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Nastavení</span></a>
+      </nav>
+      <div class="rail-foot" id="railStatus"></div>
+    </aside>
+    <div class="main-area">
+      <header class="topbar">
+        <a class="brand brand-compact" href="#/overview" aria-label="Výdaje, přehled"><span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i></span></a>
+        <div class="period capsule" role="group" aria-label="Období">
+          <button type="button" id="previousMonth" class="icon-button" aria-label="Předchozí měsíc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg></button>
+          <span id="periodLabel" class="period-label" aria-live="polite">Listopad 2026</span>
+          <button type="button" id="nextMonth" class="icon-button" aria-label="Další měsíc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9.5 6 6 6-6 6"/></svg></button>
+          <button type="button" id="todayButton" class="capsule-button today-button" hidden>Dnes</button>
+          <span class="capsule-divider" aria-hidden="true"></span>
+          <button type="button" id="rangePicker" class="capsule-button" aria-label="Vlastní období"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="3.5"/><path d="M3.5 10h17M8 3v4m8-4v4"/></svg><span>Vlastní období</span></button>
+        </div>
+        <button type="button" id="quickAdd" class="primary-button"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Přidat výdaj</span></button>
+      </header>
+      <main id="appContent" class="content" tabindex="-1"></main>
+    </div>
+  </div>
+  <nav class="tabbar" aria-label="Hlavní nabídka">
+    <a href="#/overview" data-nav="overview"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg><span>Přehled</span></a>
+    <a href="#/transactions" data-nav="transactions"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg><span>Platby</span></a>
+    <a href="#/add" data-nav="add" class="tabbar-add" aria-label="Přidat výdaj"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></a>
+    <a href="#/analysis" data-nav="analysis"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V12m5.3 8V7m5.4 13V4M20 20v-9"/></svg><span>Analýza</span></a>
+    <a href="#/categories" data-nav="categories"><svg class="nav-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h7m4 0h5M4 17h3m4 0h9"/><circle cx="13" cy="7" r="2"/><circle cx="9" cy="17" r="2"/></svg><span>Nastavení</span></a>
+  </nav>
+  <dialog id="periodDialog" class="sheet" aria-labelledby="periodDialogTitle">
+    <div class="dialog-head"><h2 id="periodDialogTitle">Vlastní období</h2><button type="button" data-close-dialog="periodDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <form id="periodForm" class="form-grid">
+      <label>Od data<input type="date" name="from" required></label>
+      <label>Do data<input type="date" name="to" required></label>
+      <div class="dialog-actions"><button type="button" id="clearPeriod" class="secondary-button">Všechna období</button><button type="submit" class="primary-button">Použít</button></div>
+    </form>
+  </dialog>
+  <dialog id="categoryDialog" class="sheet" aria-labelledby="pickerTitle">
+    <div class="dialog-head"><h2 id="pickerTitle">Vybrat kategorii</h2><button type="button" data-close-dialog="categoryDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div id="categoryChoices" class="choice-grid"></div>
+  </dialog>
+  <dialog id="monthDialog" class="sheet" aria-labelledby="monthPickerTitle">
+    <div class="dialog-head"><h2 id="monthPickerTitle">Vybrat měsíc</h2><button type="button" data-close-dialog="monthDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div id="monthChoices" class="choice-grid month-grid"></div>
+  </dialog>
+  <dialog id="iconDialog" class="sheet" aria-labelledby="iconPickerTitle">
+    <div class="dialog-head"><h2 id="iconPickerTitle">Vybrat ikonu</h2><button type="button" data-close-dialog="iconDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <div id="iconChoices" class="choice-grid icon-grid"></div>
+  </dialog>
+  <dialog id="editDialog" class="sheet" aria-labelledby="editTitle">
+    <div class="dialog-head"><h2 id="editTitle">Upravit výdaj</h2><button type="button" data-close-dialog="editDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <form id="editForm" class="form-grid">
+      <label>Datum<input type="date" name="date" required></label>
+      <label>Částka v Kč<input type="text" name="amount" inputmode="decimal" required></label>
+      <label class="wide">Obchod nebo popis<input type="text" name="description" maxlength="160" required></label>
+      <div class="wide field-block"><span class="field-caption">Kategorie</span><button type="button" id="editCategory" class="select-button" data-action="pick-category"></button></div>
+      <label class="wide">Poznámka<input type="text" name="note" maxlength="300" placeholder="Volitelné upřesnění"></label>
+      <div class="dialog-actions"><button type="button" id="deleteTransaction" class="danger-button">Smazat</button><button type="submit" class="primary-button">Uložit změny</button></div>
+    </form>
+  </dialog>
+  <input type="file" id="customLogoInput" accept="image/png,image/jpeg,image/webp" hidden>
+  <input type="file" id="restoreInput" accept="application/json,.json" hidden>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="src/vydaje-data.js"></script>
+  <script src="src/cloud.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>
