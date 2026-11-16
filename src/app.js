@@ -10,6 +10,7 @@
   const money = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' });
   const compact = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 });
   const dateShort = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
+  const dayMonth = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric' });
   const dateTiny = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric' });
   const $ = id => document.getElementById(id);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
@@ -211,11 +212,13 @@
   function sumCents(rows) { return 0 - countedRows(rows).reduce((sum, row) => sum + row.cents, 0); }
   function rangeDescription() {
     if (filters.from && filters.from === filters.to) return displayDate(filters.from);
+    // Ve stejném roce se rok píše jen jednou, aby se období vešlo do kapsle i na mobilu.
+    if (filters.from && filters.to && filters.from.slice(0, 4) === filters.to.slice(0, 4)) return `${dayMonth.format(dateObject(filters.from))} – ${filters.to.startsWith(String(today.getFullYear())) ? dayMonth.format(dateObject(filters.to)) : displayDate(filters.to)}`;
     if (filters.from || filters.to) return [filters.from ? displayDate(filters.from) : 'bez začátku', filters.to ? displayDate(filters.to) : 'bez konce'].join(' – ');
     return selectedMonth ? monthLabel(selectedMonth) : 'Všechna období';
   }
   function route() {
-    const name = location.hash.match(/^#\/(overview|transactions|analysis|compare|add|categories)/)?.[1];
+    const name = location.hash.match(/^#\/(overview|transactions|analysis|compare|add|limits|categories)/)?.[1];
     return name || 'overview';
   }
   function applyWallpaper() {
@@ -228,10 +231,11 @@
   }
   function renderShell() {
     document.querySelectorAll('[data-nav]').forEach(link => {
-      if (link.dataset.nav === route() || (link.dataset.nav === 'analysis' && route() === 'compare' && link.closest('.tabbar'))) link.setAttribute('aria-current', 'page');
+      if (link.dataset.nav === route() || (link.closest('.tabbar') && ((link.dataset.nav === 'analysis' && route() === 'compare') || (link.dataset.nav === 'categories' && route() === 'limits')))) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
     $('periodLabel').textContent = rangeDescription();
+    $('periodLabel').classList.toggle('is-range', !!(filters.from || filters.to));
     $('rangePicker').classList.toggle('active', !!(filters.from || filters.to));
     $('todayButton').hidden = selectedMonth === currentMonth && !filters.from && !filters.to;
     $('railStatus').innerHTML = railStatusMarkup() + (session ? `<p class="rail-sync"><span data-sync="${syncState}">${syncText[syncState]}</span></p>` : '');
@@ -244,7 +248,7 @@
     const total = sumCents(rows);
     const label = monthFormat.format(new Date(today.getFullYear(), today.getMonth(), 1));
     const title = label[0].toLocaleUpperCase('cs') + label.slice(1);
-    if (!data.budgetCents) return `<a class="rail-card" href="#/categories"><span class="rail-card-label">${title}</span><strong>${wholeCrowns.format(total / 100)}</strong><span class="rail-card-note">Nastavit měsíční limit</span></a>`;
+    if (!data.budgetCents) return `<a class="rail-card" href="#/limits"><span class="rail-card-label">${title}</span><strong>${wholeCrowns.format(total / 100)}</strong><span class="rail-card-note">Nastavit měsíční limit</span></a>`;
     const share = total / data.budgetCents;
     return `<a class="rail-card ${share > 1 ? 'over' : ''}" href="#/overview"><span class="rail-card-label">${title}</span><strong>${wholeCrowns.format(total / 100)}</strong><span class="rail-meter" aria-hidden="true"><i style="width:${Math.min(100, 100 * share).toFixed(1)}%"></i></span><span class="rail-card-note">${share > 1 ? `Přečerpáno o ${wholeCrowns.format((total - data.budgetCents) / 100)}` : `${Math.round(100 * share)} % z ${wholeCrowns.format(data.budgetCents / 100)}`}</span></a>`;
   }
@@ -435,7 +439,7 @@
       </section>
       ${renderBudget(rows, total, info)}
       <div class="two-col">
-        <section class="panel"><div class="panel-head"><h2>Kam peníze šly</h2><a class="inline-link" href="${info ? '#/categories' : '#/analysis'}">${info ? 'Limity kategorií' : 'Celá analýza'}${uiIcon('right')}</a></div><div class="cat-list">${cats}</div></section>
+        <section class="panel"><div class="panel-head"><h2>Kam peníze šly</h2><a class="inline-link" href="${info ? '#/limits' : '#/analysis'}">${info ? 'Limity kategorií' : 'Celá analýza'}${uiIcon('right')}</a></div><div class="cat-list">${cats}</div></section>
         <section class="panel"><div class="panel-head"><h2>Poslední platby</h2><a class="inline-link" href="#/transactions">Všechny platby${uiIcon('right')}</a></div><div class="tx-list">${recent.length ? dayGroupsMarkup(recent) : `<p class="empty">V tomto období zatím nejsou žádné platby. <a class="inline-link" href="#/add">Přidat první</a></p>`}</div></section>
       </div>
       ${renderMerchantSpotlight(rows)}`;
@@ -788,22 +792,57 @@
 15.11.2026;Alza.cz;-109,00</pre><ul class="plain-list"><li>Berou se jen záporné částky, příjmy se přeskočí.</li><li>Platby, které už v evidenci jsou, se předem vypnou.</li><li>Kategorie se odhadne podle obchodu a jde před importem změnit.</li></ul></section>`;
     return `<div class="page-head"><h1>Přidat výdaj</h1></div><div class="two-col lead wide-first"><section class="panel form-panel">${segmented('add-tab', addTab, [['manual', 'Ruční zadání'], ['import', 'Import výpisu']], 'Způsob přidání')}${addTab === 'manual' ? form : importer}</section>${side}</div>${addTab === 'import' ? preview : ''}`;
   }
+  // Rozbalovací sekce Nastavení si pamatují stav i po překreslení stránky.
+  const openSections = new Set();
+  function disclosure(id, title, meta, body) {
+    return `<details class="panel disclosure" data-section="${id}" ${openSections.has(id) ? 'open' : ''}><summary class="disclosure-head"><h2>${title}</h2><span class="muted small">${meta}</span>${uiIcon('chevron', 'disclosure-chevron')}</summary><div class="disclosure-body">${body}</div></details>`;
+  }
+  function limitNoteText() {
+    const limitSum = Object.values(data.categoryBudgets).reduce((sum, cents) => sum + cents, 0);
+    if (!limitSum) return 'Ke každé kategorii můžeš zadat měsíční strop. Na Přehledu pak uvidíš, kolik z něj zbývá.';
+    return `Limity kategorií dávají dohromady ${wholeCrowns.format(limitSum / 100)}${data.budgetCents ? (limitSum > data.budgetCents ? `, o ${wholeCrowns.format((limitSum - data.budgetCents) / 100)} víc než celkový měsíční limit.` : `, z celkového limitu ${wholeCrowns.format(data.budgetCents / 100)} zbývá ${wholeCrowns.format((data.budgetCents - limitSum) / 100)} na ostatní.`) : '.'}`;
+  }
+  function limitRowMarkup(item, spent) {
+    const limit = data.categoryBudgets[item.name];
+    const cents = spent.get(item.name) || 0;
+    const share = limit ? cents / limit : 0;
+    const meta = limit
+      ? (share > 1 ? `<span class="over">přečerpáno o ${wholeCrowns.format((cents - limit) / 100)}</span>` : `${wholeCrowns.format(cents / 100)} z ${wholeCrowns.format(limit / 100)} · zbývá ${wholeCrowns.format((limit - cents) / 100)}`)
+      : `tento měsíc ${wholeCrowns.format(cents / 100)}`;
+    return `<div class="limit-row ${limit ? 'limited' : ''} ${share > 1 ? 'over' : ''}" data-limit-row="${escapeHtml(item.name)}" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${meta}</span></div><label class="limit-field"><span class="visually-hidden">Měsíční limit pro ${escapeHtml(item.name)} v Kč</span><input type="text" inputmode="decimal" data-limit="${escapeHtml(item.name)}" value="${limit ? escapeHtml(String(limit / 100).replace('.', ',')) : ''}" placeholder="Bez limitu"><span aria-hidden="true">Kč</span></label>${limit ? `<span class="cat-track" aria-hidden="true"><i class="cat-fill" style="width:${Math.min(100, 100 * share).toFixed(1)}%"></i></span>` : ''}</div>`;
+  }
+  function monthSpendByCategory() { return new Map(totalsByCategory(data.transactions.filter(row => row.date.startsWith(currentMonth)))); }
+  function renderLimits() {
+    const spent = monthSpendByCategory();
+    const total = sumCents(data.transactions.filter(row => row.date.startsWith(currentMonth)));
+    const rows = data.categories.filter(item => item.name !== 'Nepočítá se').map(item => limitRowMarkup(item, spent)).join('');
+    const month = monthLabel(currentMonth);
+    const context = data.budgetCents
+      ? `${month}: zatím ${wholeCrowns.format(total / 100)} z ${wholeCrowns.format(data.budgetCents / 100)}${total > data.budgetCents ? `, přečerpáno o ${wholeCrowns.format((total - data.budgetCents) / 100)}.` : `, zbývá ${wholeCrowns.format((data.budgetCents - total) / 100)}.`}`
+      : `${month}: zatím ${wholeCrowns.format(total / 100)}. Strop, proti kterému se na Přehledu měří každý měsíc.`;
+    return `<div class="page-head"><h1>Limity</h1><a class="inline-link page-back" href="#/categories">${uiIcon('left')}Nastavení</a></div>
+      <section class="panel"><div class="panel-head"><h2>Měsíční limit</h2></div><p class="field-help">${context}</p>${budgetFormMarkup(true)}</section>
+      <section class="panel"><div class="panel-head"><h2>Limity kategorií</h2><span class="muted small">${Object.keys(data.categoryBudgets).length} z ${data.categories.length - 1} nastaveno</span></div><p class="field-help" id="limitNote">${limitNoteText()}</p><div class="limit-list">${rows}</div></section>`;
+  }
   function renderCategories() {
     const counts = new Map(data.categories.map(item => [item.name, 0]));
     data.transactions.forEach(row => counts.set(categoryName(row), (counts.get(categoryName(row)) || 0) + 1));
-    const managers = data.categories.map(item => { const limit = data.categoryBudgets[item.name]; return `<div class="manager-row" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${counts.get(item.name)} ${countWord(counts.get(item.name))}</span></div>${item.name === 'Nepočítá se' ? '<span class="limit-none">bez limitu</span>' : `<label class="limit-field"><span class="visually-hidden">Měsíční limit pro ${escapeHtml(item.name)} v Kč</span><input type="text" inputmode="decimal" data-limit="${escapeHtml(item.name)}" value="${limit ? escapeHtml(String(limit / 100).replace('.', ',')) : ''}" placeholder="Bez limitu"><span aria-hidden="true">Kč</span></label>`}<button type="button" class="icon-button" data-action="pick-icon" data-name="${escapeHtml(item.name)}" aria-label="Změnit ikonu kategorie ${escapeHtml(item.name)}" data-tip="Změnit ikonu">${icon('upravit')}</button>${!seed.baseCategories.includes(item.name) ? `<button type="button" class="icon-button danger" data-action="remove-category" data-name="${escapeHtml(item.name)}" aria-label="Smazat kategorii ${escapeHtml(item.name)}" data-tip="Smazat kategorii">${icon('smazat')}</button>` : '<span></span>'}</div>`; }).join('');
-    const limitSum = Object.values(data.categoryBudgets).reduce((sum, cents) => sum + cents, 0);
-    const limitNote = limitSum ? `Limity kategorií dávají dohromady ${wholeCrowns.format(limitSum / 100)}${data.budgetCents ? (limitSum > data.budgetCents ? `, o ${wholeCrowns.format((limitSum - data.budgetCents) / 100)} víc než celkový měsíční limit.` : `, z celkového limitu ${wholeCrowns.format(data.budgetCents / 100)} zbývá ${wholeCrowns.format((data.budgetCents - limitSum) / 100)} na ostatní.`) : '.'}` : 'Ke každé kategorii můžeš zadat měsíční strop. Na Přehledu pak uvidíš, kolik z něj zbývá.';
-    const logos = Object.entries(logoNames).map(([id, name]) => `<div class="logo-tile"><span class="brand-logo" aria-hidden="true"><img src="${logoPath(id)}" alt=""></span><span>${escapeHtml(name)}</span></div>`).join('');
+    const managers = data.categories.map(item => `<div class="manager-row" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${counts.get(item.name)} ${countWord(counts.get(item.name))}</span></div><button type="button" class="icon-button" data-action="pick-icon" data-name="${escapeHtml(item.name)}" aria-label="Změnit ikonu kategorie ${escapeHtml(item.name)}" data-tip="Změnit ikonu">${icon('upravit')}</button>${!seed.baseCategories.includes(item.name) ? `<button type="button" class="icon-button danger" data-action="remove-category" data-name="${escapeHtml(item.name)}" aria-label="Smazat kategorii ${escapeHtml(item.name)}" data-tip="Smazat kategorii">${icon('smazat')}</button>` : '<span></span>'}</div>`).join('');
+    const logos = Object.entries(logoNames).map(([id, name]) => `<div class="logo-tile"><span class="brand-logo" aria-hidden="true"><img src="${logoPath(id)}" alt="" loading="lazy"></span><span>${escapeHtml(name)}</span></div>`).join('');
     const unmatched = [...new Set(data.transactions.map(row => row.description))].filter(name => !logoId(name)).sort((a, b) => a.localeCompare(b, 'cs'));
     const customLogos = Object.keys(data.brandOverrides).length;
+    const limitCount = Object.keys(data.categoryBudgets).length;
+    const limitSummary = data.budgetCents ? `Měsíc ${wholeCrowns.format(data.budgetCents / 100)}` : 'Měsíční limit nenastaven';
+    const missing = unmatched.filter(name => !data.brandOverrides[merchantKey(name)]).length;
+    const categoryBody = `<div class="category-manager">${managers}</div><form id="newCategoryForm" class="new-category"><label class="field">Nová kategorie<input type="text" name="name" maxlength="40" placeholder="Název kategorie" required></label><button type="button" class="select-button" data-action="pick-icon" data-name="_draft">${icon(draftIcon)}<span>Vybrat ikonu</span></button><button type="submit" class="primary-button">Přidat kategorii</button></form>`;
+    const logoBody = `<p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek.</p><h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div><h3 class="sub-head">Připravená loga</h3><div class="logos-grid">${logos}</div>`;
     return `<div class="page-head"><h1>Nastavení</h1></div>
       <div class="two-col">
-        <section class="panel"><div class="panel-head"><h2>Měsíční limit</h2></div><p class="field-help">Strop, proti kterému se na Přehledu měří každý měsíc.${data.budgetCents ? ` Teď ${wholeCrowns.format(data.budgetCents / 100)}.` : ''}</p>${budgetFormMarkup(true)}</section>
+        <a class="panel link-panel" href="#/limits"><span class="link-panel-text"><h2>Limity</h2><span class="field-help">${limitSummary} · ${limitCount ? `${limitCount} ${limitCount === 1 ? 'kategorie' : limitCount < 5 ? 'kategorie' : 'kategorií'} s limitem` : 'kategorie bez limitů'}</span></span>${uiIcon('right', 'link-panel-arrow')}</a>
         <section class="panel"><div class="panel-head"><h2>Vzhled</h2></div><p class="field-help">Barva a vzor pod sklem. Mění se v celé aplikaci.</p><div class="wallpaper-grid" role="radiogroup" aria-label="Tapeta">${wallpaperButtons(true)}</div></section>
       </div>
-      <section class="panel"><div class="panel-head"><h2>Kategorie a jejich limity</h2><span class="muted small">${data.categories.length} kategorií</span></div><p class="field-help" id="limitNote">${limitNote}</p><div class="category-manager">${managers}</div><form id="newCategoryForm" class="new-category"><label class="field">Nová kategorie<input type="text" name="name" maxlength="40" placeholder="Název kategorie" required></label><button type="button" class="select-button" data-action="pick-icon" data-name="_draft">${icon(draftIcon)}<span>Vybrat ikonu</span></button><button type="submit" class="primary-button">Přidat kategorii</button></form></section>
-      <section class="panel"><div class="panel-head"><h2>Loga obchodů</h2><span class="muted small">${Object.keys(logoNames).length} připravených · ${customLogos} vlastních</span></div><p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek.</p><div class="logos-grid">${logos}</div><h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div></section>
+      ${disclosure('categories', 'Kategorie', `${data.categories.length} kategorií`, categoryBody)}
+      ${disclosure('logos', 'Loga obchodů', `${Object.keys(logoNames).length} připravených · ${customLogos} vlastních${missing ? ` · ${missing} bez loga` : ''}`, logoBody)}
       ${accountPanel()}
       <section class="panel"><div class="panel-head"><h2>Data a záloha</h2></div><p class="field-help">${session ? 'Data jsou uložená v tvém účtu. Záloha v souboru se hodí pro přenos z jiné instalace nebo jako pojistka.' : 'Všechno se ukládá jen v tomto prohlížeči. Zálohu si stáhni před vymazáním dat prohlížeče nebo přechodem na jiné zařízení.'}</p><div class="form-actions"><button type="button" class="secondary-button" data-action="download-backup">Stáhnout zálohu JSON</button><button type="button" class="secondary-button" data-action="restore-backup">Obnovit ze zálohy</button></div></section>`;
   }
@@ -903,7 +942,7 @@
     const page = route();
     const content = $('appContent');
     hideTip();
-    content.innerHTML = page === 'transactions' ? renderTransactions() : page === 'analysis' ? renderAnalysis() : page === 'compare' ? renderCompare() : page === 'add' ? renderAdd() : page === 'categories' ? renderCategories() : renderOverview();
+    content.innerHTML = page === 'transactions' ? renderTransactions() : page === 'analysis' ? renderAnalysis() : page === 'compare' ? renderCompare() : page === 'add' ? renderAdd() : page === 'limits' ? renderLimits() : page === 'categories' ? renderCategories() : renderOverview();
     if (page === 'transactions') renderTransactionResults();
     if (lastRoute !== null && lastRoute !== page) window.scrollTo(0, 0);
     const enter = animateNext || lastRoute !== page;
@@ -1293,6 +1332,7 @@
   $('deleteTransaction').addEventListener('click', () => {
     if (editTarget) deleteRow(editTarget.id, true);
   });
+  document.addEventListener('toggle', event => { const id = event.target.dataset?.section; if (id) { if (event.target.open) openSections.add(id); else openSections.delete(id); } }, true);
   document.addEventListener('change', async event => {
     const limitName = event.target.dataset?.limit;
     if (limitName) {
@@ -1302,7 +1342,10 @@
       if (cents) data.categoryBudgets[limitName] = cents; else delete data.categoryBudgets[limitName];
       save();
       const note = document.getElementById('limitNote');
-      if (note) { const fresh = document.createElement('div'); fresh.innerHTML = renderCategories(); note.textContent = fresh.querySelector('#limitNote').textContent; }
+      if (note) note.textContent = limitNoteText();
+      const row = [...document.querySelectorAll('[data-limit-row]')].find(node => node.dataset.limitRow === limitName);
+      const item = data.categories.find(entry => entry.name === limitName);
+      if (row && item) { const fresh = document.createElement('div'); fresh.innerHTML = limitRowMarkup(item, monthSpendByCategory()); row.replaceWith(fresh.firstElementChild); }
       toast(cents ? `Limit pro ${limitName}: ${wholeCrowns.format(cents / 100)} měsíčně.` : `Limit pro ${limitName} je zrušený.`);
       return;
     }
