@@ -5,6 +5,8 @@
   const SOURCE_KEY = 'vydaje-app-v1'; // původní aplikace; pouze se z ní čte
   const cloud = location.protocol.startsWith('http') ? window.VydajeCloud || null : null;
   let storageKey = APP_KEY;
+  // Stav účtu musí existovat dřív, než se poprvé zavolá save().
+  let session = null, pushTimer = null, pushing = false, pushAgain = false, syncState = 'saved', authMode = 'in', accountDeleting = false;
   const money = new Intl.NumberFormat('cs-CZ', { style: 'currency', currency: 'CZK' });
   const compact = new Intl.NumberFormat('cs-CZ', { maximumFractionDigits: 0 });
   const dateShort = new Intl.DateTimeFormat('cs-CZ', { day: 'numeric', month: 'numeric', year: 'numeric' });
@@ -548,7 +550,6 @@
       <section class="panel"><div class="panel-head"><h2>Nejvyšší platby</h2></div><div class="tx-list"><section class="day two-up">${largest || '<p class="empty">Žádné platby</p>'}</section></div></section>`;
   }
   // ——— Účet a synchronizace (jen na webu; z disku běží aplikace bez přihlášení) ———
-  let session = null, pushTimer = null, pushing = false, pushAgain = false, syncState = 'saved', authMode = 'in', accountDeleting = false;
   const syncText = { saved: 'Uloženo v účtu', pending: 'Ukládám…', saving: 'Ukládám…', error: 'Neuloženo, zkusím to znovu' };
   function setSync(state) {
     syncState = state;
