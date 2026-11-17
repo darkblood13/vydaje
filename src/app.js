@@ -48,9 +48,97 @@
     [/openai|chatgpt/, 'openai'], [/kaufland/, 'kaufland'], [/^action/, 'action'],
     [/globus/, 'globus'], [/^dm /, 'dm'], [/adobe/, 'adobe'],
     [/anthropic|claude/, 'anthropic'], [/rossmann/, 'rossmann'], [/eurooil/, 'eurooil'],
-    [/u tenisu/, 'utenisu'], [/^bb cestlice|bageterie boulevard/, 'bb'], [/sunny market/, 'sunny']
+    [/u tenisu/, 'utenisu'], [/^bb cestlice|bageterie boulevard/, 'bb'], [/sunny market/, 'sunny'],
+    // Sbírka log ze 17. 11. 2026 (zdroje v docs/loga-zdroje.json); vzor platí od začátku slova.
+    [/(?:^| )(?:tesco)/, 'tesco'],
+    [/(?:^| )(?:norma)/, 'norma'],
+    [/(?:^| )mol(?: |$)/, 'mol'],
+    [/(?:^| )(?:netflix)/, 'netflix'],
+    [/(?:^| )(?:spotify)/, 'spotify'],
+    [/(?:^| )(?:dr max|drmax)/, 'drmax'],
+    [/(?:^| )(?:ppl)/, 'ppl'],
+    [/(?:^| )(?:burger king|burgerking)/, 'burgerking'],
+    [/(?:^| )(?:mall cz|allegro)/, 'mall'],
+    [/(?:^| )(?:youtube)/, 'youtube'],
+    [/(?:^| )(?:lidl)/, 'lidl'],
+    [/(?:^| )(?:makro)/, 'makro'],
+    [/(?:^| )(?:coop jednota|jednota|coop)/, 'coop'],
+    [/(?:^| )(?:kosik)/, 'kosik'],
+    [/(?:^| )(?:teta drogerie)/, 'teta'],
+    [/(?:^| )(?:benu)/, 'benu'],
+    [/(?:^| )(?:pilulka)/, 'pilulka'],
+    [/(?:^| )(?:notino)/, 'notino'],
+    [/(?:^| )(?:orlen|benzina)/, 'orlen'],
+    [/(?:^| )(?:shell)/, 'shell'],
+    [/(?:^| )(?:omv)/, 'omv'],
+    [/(?:^| )(?:mcdonald)/, 'mcdonalds'],
+    [/(?:^| )(?:kfc)/, 'kfc'],
+    [/(?:^| )(?:starbucks)/, 'starbucks'],
+    [/(?:^| )(?:costa coffee)/, 'costa'],
+    [/(?:^| )(?:ikea)/, 'ikea'],
+    [/(?:^| )(?:decathlon)/, 'decathlon'],
+    [/(?:^| )(?:hornbach)/, 'hornbach'],
+    [/(?:^| )(?:obi market|obi cz)/, 'obi'],
+    [/(?:^| )(?:bauhaus)/, 'bauhaus'],
+    [/(?:^| )(?:czc)/, 'czc'],
+    [/(?:^| )(?:pepco)/, 'pepco'],
+    [/(?:^| )(?:tedi)/, 'tedi'],
+    [/(?:^| )(?:zara)/, 'zara'],
+    [/(?:^| )(?:lindex)/, 'lindex'],
+    [/(?:^| )(?:bolt)/, 'bolt'],
+    [/(?:^| )(?:uber)/, 'uber'],
+    [/(?:^| )(?:foodora)/, 'foodora'],
+    [/(?:^| )(?:ceske drahy|cd cz)/, 'cd'],
+    [/(?:^| )(?:regiojet)/, 'regiojet'],
+    [/(?:^| )(?:leo express|leoexpress)/, 'leoexpress'],
+    [/(?:^| )(?:google)/, 'google'],
+    [/(?:^| )(?:steam)/, 'steam'],
+    [/(?:^| )(?:microsoft)/, 'microsoft'],
+    [/(?:^| )(?:o2 cz|o2 czech)/, 'o2'],
+    [/(?:^| )(?:t mobile|tmobile)/, 'tmobile'],
+    [/(?:^| )(?:vodafone)/, 'vodafone'],
+    [/(?:^| )(?:cez)/, 'cez'],
+    [/(?:^| )(?:packeta|zasilkovna)/, 'packeta'],
+    [/(?:^| )(?:douglas)/, 'douglas'],
+    [/(?:^| )(?:yves rocher)/, 'yverocher'],
+    [/(?:^| )(?:kiko)/, 'kiko'],
+    [/(?:^| )(?:deichmann)/, 'deichmann'],
+    [/(?:^| )(?:nike)/, 'nike'],
+    [/(?:^| )(?:adidas)/, 'adidas'],
+    [/(?:^| )(?:sportisimo)/, 'sportisimo'],
+    [/(?:^| )(?:ryanair)/, 'ryanair'],
+    [/(?:^| )(?:wizz air|wizzair)/, 'wizzair'],
+    [/(?:^| )(?:booking com|booking)/, 'booking'],
+    [/(?:^| )(?:airbnb)/, 'airbnb'],
+    [/(?:^| )(?:aliexpress)/, 'aliexpress'],
+    [/(?:^| )(?:temu)/, 'temu'],
+    [/(?:^| )(?:shein)/, 'shein'],
+    [/(?:^| )(?:playstation)/, 'playstation'],
+    [/(?:^| )(?:disney plus|disney)/, 'disneyplus'],
+    [/(?:^| )(?:xbox)/, 'xbox'],
+    [/(?:^| )(?:github)/, 'github'],
+    [/(?:^| )(?:canva)/, 'canva'],
+    [/(?:^| )(?:notion)/, 'notion'],
+    [/(?:^| )(?:figma)/, 'figma'],
+    [/(?:^| )(?:duolingo)/, 'duolingo'],
+    [/(?:^| )(?:revolut)/, 'revolut'],
+    [/(?:^| )(?:ceska sporitelna|csas)/, 'csas'],
+    [/(?:^| )(?:komercni banka)/, 'kb'],
+    [/(?:^| )(?:csob)/, 'csob'],
+    [/(?:^| )(?:fio banka)/, 'fio'],
+    [/(?:^| )(?:mbank)/, 'mbank'],
+    [/(?:^| )(?:hbo max|hbomax)/, 'hbomax'],
+    [/(?:^| )(?:lego)/, 'lego'],
+    [/(?:^| )(?:tchibo)/, 'tchibo'],
+    [/(?:^| )(?:sbazar)/, 'sbazar'],
+    [/(?:^| )(?:bazos)/, 'bazos'],
+    [/(?:^| )(?:ticketportal)/, 'ticketportal'],
+    [/(?:^| )(?:dpp)/, 'dpp']
   ];
-  const logoNames = { apple:'Apple', alza:'Alza', albert:'Albert', billa:'BILLA', ono:'Tank ONO', aluha:'Aluha', rohlik:'Rohlík', playlive:'PlayLive', pid:'PID Lítačka', wolt:'Wolt', openai:'OpenAI', kaufland:'Kaufland', action:'Action', globus:'Globus', dm:'dm', adobe:'Adobe', anthropic:'Anthropic', rossmann:'Rossmann', eurooil:'EuroOil', utenisu:'U Tenisu', bb:'Bageterie Boulevard', sunny:'Sunny Market' };
+  const logoNames = { apple:'Apple', alza:'Alza', albert:'Albert', billa:'BILLA', ono:'Tank ONO', aluha:'Aluha', rohlik:'Rohlík', playlive:'PlayLive', pid:'PID Lítačka', wolt:'Wolt', openai:'OpenAI', kaufland:'Kaufland', action:'Action', globus:'Globus', dm:'dm', adobe:'Adobe', anthropic:'Anthropic', rossmann:'Rossmann', eurooil:'EuroOil', utenisu:'U Tenisu', bb:'Bageterie Boulevard', sunny:'Sunny Market', tesco:'Tesco', norma:'Norma', mol:'MOL', netflix:'Netflix', spotify:'Spotify', drmax:'Dr.Max', ppl:'PPL', burgerking:'Burger King', mall:'Allegro (Mall)', youtube:'YouTube', lidl:'Lidl', makro:'Makro', coop:'COOP Jednota', kosik:'Košík', teta:'Teta', benu:'Benu', pilulka:'Pilulka', notino:'Notino', orlen:'Orlen', shell:'Shell', omv:'OMV', mcdonalds:'McDonald\'s', kfc:'KFC', starbucks:'Starbucks', costa:'Costa Coffee', ikea:'IKEA', decathlon:'Decathlon', hornbach:'Hornbach', obi:'OBI', bauhaus:'Bauhaus', czc:'CZC', pepco:'Pepco', tedi:'TEDi', zara:'Zara', lindex:'Lindex', bolt:'Bolt', uber:'Uber', foodora:'Foodora', cd:'České dráhy', regiojet:'RegioJet', leoexpress:'Leo Express', google:'Google', steam:'Steam', microsoft:'Microsoft', o2:'O2', tmobile:'T-Mobile', vodafone:'Vodafone', cez:'ČEZ', packeta:'Zásilkovna (Packeta)', douglas:'Douglas', yverocher:'Yves Rocher', kiko:'KIKO', deichmann:'Deichmann', nike:'Nike', adidas:'adidas', sportisimo:'Sportisimo', ryanair:'Ryanair', wizzair:'Wizz Air', booking:'Booking.com', airbnb:'Airbnb', aliexpress:'AliExpress', temu:'Temu', shein:'SHEIN', playstation:'PlayStation', disneyplus:'Disney+', xbox:'Xbox', github:'GitHub', canva:'Canva', notion:'Notion', figma:'Figma', duolingo:'Duolingo', revolut:'Revolut', csas:'Česká spořitelna', kb:'Komerční banka', csob:'ČSOB', fio:'Fio banka', mbank:'mBank', hbomax:'HBO Max', lego:'LEGO', tchibo:'Tchibo', sbazar:'Sbazar', bazos:'Bazoš', ticketportal:'Ticketportal', dpp:'DPP' };
+  // Loga, která jsou sama čtvercovou dlaždicí s barevným pozadím: vyplní celou dlaždici, jinak by uvnitř bílé dlaždice byl vidět ostrý čtverec.
+  const tileLogos = new Set(['adobe', 'bb', 'billa', 'pid', 'playlive', 'sunny', 'wolt', 'eurooil', 'norma', 'spotify', 'drmax', 'airbnb', 'bolt', 'canva', 'cd', 'cez', 'decathlon', 'deichmann', 'disneyplus', 'figma', 'foodora', 'hbomax', 'hornbach', 'kb', 'kfc', 'kiko', 'lego', 'leoexpress', 'lidl', 'makro', 'microsoft', 'orlen', 'regiojet', 'ryanair', 'shein', 'shell', 'sportisimo', 'starbucks', 'temu', 'tmobile', 'wizzair', 'yverocher']);
+  function logoImg(id, lazy = false) { return `<img src="${logoPath(id)}" alt=""${tileLogos.has(id) ? ' class="tile"' : ''}${lazy ? ' loading="lazy"' : ''}>`; }
   function logoPath(id) { return `assets/logos/${id}.${id === 'eurooil' ? 'jpg' : 'png'}`; }
   const ui = {
     close: '<path d="M6 6l12 12M18 6 6 18"/>', check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', chevron: '<path d="m7 10 5 5 5-5"/>',
@@ -70,8 +158,33 @@
   const wallpapers = [
     { id: 'kobalt', name: 'Kobalt', color: '#0C2FBE' },
     { id: 'smaragd', name: 'Smaragd', color: '#0B6B35' },
-    { id: 'rumelka', name: 'Rumělka', color: '#E32C08' },
-    { id: 'grafit', name: 'Grafit', color: '#2A2A2C' }
+    { id: 'bordo', name: 'Bordó', color: '#3A1013' },
+    { id: 'grafit', name: 'Grafit', color: '#2A2A2C' },
+    { id: 'safran', name: 'Šafrán', color: '#F1A905' },
+    { id: 'levandule', name: 'Levandule', color: '#C0A0DC' },
+    { id: 'petrolej', name: 'Petrolej', color: '#063A3F' },
+    { id: 'koral', name: 'Korál', color: '#F7767B' },
+    { id: 'svestka', name: 'Švestka', color: '#471E33' },
+    { id: 'oliva', name: 'Oliva', color: '#576C24' },
+    { id: 'pisek', name: 'Písek', color: '#CDAB80' },
+    { id: 'terakota', name: 'Terakota', color: '#D15A24' },
+    { id: 'mentol', name: 'Mentol', color: '#96E6AF' },
+    { id: 'fuchsie', name: 'Fuchsie', color: '#DB0C68' },
+    { id: 'noc', name: 'Noc', color: '#0E1E3C' },
+    { id: 'rubin', name: 'Rubín', color: '#8E0D1B' },
+    { id: 'ledovec', name: 'Ledovec', color: '#B5D1DC' },
+    { id: 'jantar', name: 'Jantar', color: '#E97A0F' },
+    { id: 'antracit', name: 'Antracit', color: '#40493F' },
+    { id: 'broskev', name: 'Broskev', color: '#F9B799' },
+    { id: 'indigo', name: 'Indigo', color: '#233381' },
+    { id: 'salvej', name: 'Šalvěj', color: '#899574' },
+    { id: 'horcice', name: 'Hořčice', color: '#D49417' },
+    { id: 'ruze', name: 'Růže', color: '#D88789' },
+    { id: 'kakao', name: 'Kakao', color: '#652F23' },
+    { id: 'tyrkys', name: 'Tyrkys', color: '#17D1CF' },
+    { id: 'slonovina', name: 'Slonovina', color: '#EFE2CF' },
+    { id: 'vino', name: 'Víno', color: '#620E23' },
+    { id: 'citron', name: 'Citron', color: '#F7DB11' }
   ];
   const monthLocative = ['lednu', 'únoru', 'březnu', 'dubnu', 'květnu', 'červnu', 'červenci', 'srpnu', 'září', 'říjnu', 'listopadu', 'prosinci'];
   const monthFormat = new Intl.DateTimeFormat('cs-CZ', { month: 'long', year: 'numeric' });
@@ -147,7 +260,7 @@
     const custom = data.brandOverrides[merchantKey(row.description)];
     const known = logoId(row.description);
     const src = custom || (known ? logoPath(known) : '');
-    return `<span class="brand-logo" aria-hidden="true">${src ? `<img src="${escapeHtml(src)}" alt="">` : categoryIcon(categoryName(row))}</span>`;
+    return `<span class="brand-logo" aria-hidden="true">${src ? `<img src="${escapeHtml(src)}" alt=""${!custom && tileLogos.has(known) ? ' class="tile"' : ''}>` : categoryIcon(categoryName(row))}</span>`;
   }
   function dateObject(iso) { return new Date(`${iso}T12:00:00Z`); }
   function displayDate(iso) { return dateShort.format(dateObject(iso)); }
@@ -226,6 +339,7 @@
     document.documentElement.dataset.wallpaper = item.id;
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', item.color);
   }
+  function currentWallpaper() { return wallpapers.find(entry => entry.id === data.wallpaper) || wallpapers[0]; }
   function wallpaperButtons(withNames = false) {
     return wallpapers.map(item => `<button type="button" class="wallpaper-swatch" role="radio" aria-checked="${data.wallpaper === item.id}" data-action="set-wallpaper" data-value="${item.id}" style="background-image:url(assets/bg/${item.id}-nahled.webp)" ${withNames ? '' : `aria-label="${item.name}" title="${item.name}"`}>${withNames ? `<span>${item.name}</span>` : ''}</button>`).join('');
   }
@@ -409,7 +523,7 @@
     const top = [...brands].sort((a, b) => b[1].cents - a[1].cents).slice(0, 12);
     if (!top.length) return '';
     const total = -counted.reduce((sum, row) => sum + row.cents, 0) || 1;
-    return `<section class="panel carousel-panel" data-scroller="disable"><div class="panel-head"><h2>Kde utrácíš nejvíc</h2><div class="carousel-nav"><button type="button" class="icon-button" data-scroll="-1" aria-label="Předchozí obchody">${uiIcon('left')}</button><button type="button" class="icon-button" data-scroll="1" aria-label="Další obchody">${uiIcon('right')}</button></div></div><div class="carousel" data-track tabindex="0" role="group" aria-label="Obchody podle útraty">${top.map(([id, item], index) => `<article class="merchant" style="--d:${index}"><div class="merchant-top"><span class="brand-logo large" aria-hidden="true"><img src="${logoPath(id)}" alt=""></span><span class="merchant-rank">${index + 1}.</span></div><span class="merchant-name">${escapeHtml(logoNames[id])}</span><strong>${positiveMoney(item.cents)}</strong><span class="merchant-count">${item.count} ${countWord(item.count)} · ${Math.max(1, Math.round(100 * item.cents / total))} % útraty</span></article>`).join('')}</div></section>`;
+    return `<section class="panel carousel-panel" data-scroller="disable"><div class="panel-head"><h2>Kde utrácíš nejvíc</h2><div class="carousel-nav"><button type="button" class="icon-button" data-scroll="-1" aria-label="Předchozí obchody">${uiIcon('left')}</button><button type="button" class="icon-button" data-scroll="1" aria-label="Další obchody">${uiIcon('right')}</button></div></div><div class="carousel" data-track tabindex="0" role="group" aria-label="Obchody podle útraty">${top.map(([id, item], index) => `<article class="merchant" style="--d:${index}"><div class="merchant-top"><span class="brand-logo large" aria-hidden="true">${logoImg(id)}</span><span class="merchant-rank">${index + 1}.</span></div><span class="merchant-name">${escapeHtml(logoNames[id])}</span><strong>${positiveMoney(item.cents)}</strong><span class="merchant-count">${item.count} ${countWord(item.count)} · ${Math.max(1, Math.round(100 * item.cents / total))} % útraty</span></article>`).join('')}</div></section>`;
   }
   function renderOverview() {
     const rows = filteredRows();
@@ -746,7 +860,7 @@
     const shops = new Map();
     const addShops = (rows, slot) => rows.forEach(row => { const id = logoId(row.description); if (!id) return; const item = shops.get(id) || { a: 0, b: 0 }; item[slot] -= row.cents; shops.set(id, item); });
     addShops(rowsA, 'a'); addShops(rowsB, 'b');
-    const shopRows = [...shops].sort((x, y) => Math.max(y[1].a, y[1].b) - Math.max(x[1].a, x[1].b)).slice(0, 8).map(([id, item]) => `<div class="shop-row"><span class="brand-logo" aria-hidden="true"><img src="${logoPath(id)}" alt=""></span><span class="cmp-name">${escapeHtml(logoNames[id])}</span><span class="cmp-values"><strong>${wholeCrowns.format(item.a / 100)}</strong><span>${wholeCrowns.format(item.b / 100)}</span></span>${changeChip(item.a, item.b)}</div>`).join('') || '<p class="empty">Žádné známé obchody.</p>';
+    const shopRows = [...shops].sort((x, y) => Math.max(y[1].a, y[1].b) - Math.max(x[1].a, x[1].b)).slice(0, 8).map(([id, item]) => `<div class="shop-row"><span class="brand-logo" aria-hidden="true">${logoImg(id)}</span><span class="cmp-name">${escapeHtml(logoNames[id])}</span><span class="cmp-values"><strong>${wholeCrowns.format(item.a / 100)}</strong><span>${wholeCrowns.format(item.b / 100)}</span></span>${changeChip(item.a, item.b)}</div>`).join('') || '<p class="empty">Žádné známé obchody.</p>';
     return `<div class="page-head"><h1>Porovnání</h1>${analysisTabs('compare')}</div>${gapNote}
       <section class="panel cmp-hero" aria-label="Porovnávané měsíce">
         <div class="cmp-sides">${side(compareA, nameA, totalA, rowsA, 'a')}<button type="button" class="icon-button swap-button" data-action="swap-compare" aria-label="Prohodit měsíce" data-tip="Prohodit měsíce">${uiIcon('swap')}</button>${side(compareB, nameB, totalB, rowsB, 'b')}</div>
@@ -828,7 +942,7 @@
     const counts = new Map(data.categories.map(item => [item.name, 0]));
     data.transactions.forEach(row => counts.set(categoryName(row), (counts.get(categoryName(row)) || 0) + 1));
     const managers = data.categories.map(item => `<div class="manager-row" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${counts.get(item.name)} ${countWord(counts.get(item.name))}</span></div><button type="button" class="icon-button" data-action="pick-icon" data-name="${escapeHtml(item.name)}" aria-label="Změnit ikonu kategorie ${escapeHtml(item.name)}" data-tip="Změnit ikonu">${icon('upravit')}</button>${!seed.baseCategories.includes(item.name) ? `<button type="button" class="icon-button danger" data-action="remove-category" data-name="${escapeHtml(item.name)}" aria-label="Smazat kategorii ${escapeHtml(item.name)}" data-tip="Smazat kategorii">${icon('smazat')}</button>` : '<span></span>'}</div>`).join('');
-    const logos = Object.entries(logoNames).map(([id, name]) => `<div class="logo-tile"><span class="brand-logo" aria-hidden="true"><img src="${logoPath(id)}" alt="" loading="lazy"></span><span>${escapeHtml(name)}</span></div>`).join('');
+    const logos = Object.entries(logoNames).map(([id, name]) => `<div class="logo-tile"><span class="brand-logo" aria-hidden="true">${logoImg(id, true)}</span><span>${escapeHtml(name)}</span></div>`).join('');
     const unmatched = [...new Set(data.transactions.map(row => row.description))].filter(name => !logoId(name)).sort((a, b) => a.localeCompare(b, 'cs'));
     const customLogos = Object.keys(data.brandOverrides).length;
     const limitCount = Object.keys(data.categoryBudgets).length;
@@ -837,12 +951,10 @@
     const categoryBody = `<div class="category-manager">${managers}</div><form id="newCategoryForm" class="new-category"><label class="field">Nová kategorie<input type="text" name="name" maxlength="40" placeholder="Název kategorie" required></label><button type="button" class="select-button" data-action="pick-icon" data-name="_draft">${icon(draftIcon)}<span>Vybrat ikonu</span></button><button type="submit" class="primary-button">Přidat kategorii</button></form>`;
     const logoBody = `<p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek.</p><h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div><h3 class="sub-head">Připravená loga</h3><div class="logos-grid">${logos}</div>`;
     return `<div class="page-head"><h1>Nastavení</h1></div>
-      <div class="two-col">
-        <a class="panel link-panel" href="#/limits"><span class="link-panel-text"><h2>Limity</h2><span class="field-help">${limitSummary} · ${limitCount ? `${limitCount} ${limitCount === 1 ? 'kategorie' : limitCount < 5 ? 'kategorie' : 'kategorií'} s limitem` : 'kategorie bez limitů'}</span></span>${uiIcon('right', 'link-panel-arrow')}</a>
-        <section class="panel"><div class="panel-head"><h2>Vzhled</h2></div><p class="field-help">Barva a vzor pod sklem. Mění se v celé aplikaci.</p><div class="wallpaper-grid" role="radiogroup" aria-label="Tapeta">${wallpaperButtons(true)}</div></section>
-      </div>
+      <a class="panel link-panel" href="#/limits"><span class="link-panel-text"><h2>Limity</h2><span class="field-help">${limitSummary} · ${limitCount ? `${limitCount} ${limitCount === 1 ? 'kategorie' : limitCount < 5 ? 'kategorie' : 'kategorií'} s limitem` : 'kategorie bez limitů'}</span></span>${uiIcon('right', 'link-panel-arrow')}</a>
+      ${disclosure('looks', 'Vzhled', `<span class="current-wallpaper"><i style="background-image:url(assets/bg/${currentWallpaper().id}-nahled.webp)"></i>${escapeHtml(currentWallpaper().name)} · ${wallpapers.length} tapet</span>`, `<p class="field-help">Barva a vzor pod sklem. Mění se v celé aplikaci.</p><div class="wallpaper-grid" role="radiogroup" aria-label="Tapeta">${wallpaperButtons(true)}</div>`)}
       ${disclosure('categories', 'Kategorie', `${data.categories.length} kategorií`, categoryBody)}
-      ${disclosure('logos', 'Loga obchodů', `${Object.keys(logoNames).length} připravených · ${customLogos} vlastních${missing ? ` · ${missing} bez loga` : ''}`, logoBody)}
+      ${disclosure('logos', 'Loga obchodů', `${Object.keys(logoNames).length + customLogos} log${missing ? ` · ${missing} bez loga` : ''}`, logoBody)}
       ${accountPanel()}
       <section class="panel"><div class="panel-head"><h2>Data a záloha</h2></div><p class="field-help">${session ? 'Data jsou uložená v tvém účtu. Záloha v souboru se hodí pro přenos z jiné instalace nebo jako pojistka.' : 'Všechno se ukládá jen v tomto prohlížeči. Zálohu si stáhni před vymazáním dat prohlížeče nebo přechodem na jiné zařízení.'}</p><div class="form-actions"><button type="button" class="secondary-button" data-action="download-backup">Stáhnout zálohu JSON</button><button type="button" class="secondary-button" data-action="restore-backup">Obnovit ze zálohy</button></div></section>`;
   }
@@ -1332,6 +1444,8 @@
   $('deleteTransaction').addEventListener('click', () => {
     if (editTarget) deleteRow(editTarget.id, true);
   });
+  // Kliknutí myší na hlavičku rozbalovací sekce ji nemá zaměřit (jinak zůstane rámeček); klávesnice dál funguje.
+  document.addEventListener('mousedown', event => { if (event.target.closest?.('.disclosure-head')) event.preventDefault(); });
   document.addEventListener('toggle', event => { const id = event.target.dataset?.section; if (id) { if (event.target.open) openSections.add(id); else openSections.delete(id); } }, true);
   document.addEventListener('change', async event => {
     const limitName = event.target.dataset?.limit;
