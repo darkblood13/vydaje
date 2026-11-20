@@ -193,7 +193,14 @@
   // Každá kategorie má jednu stálou barvu ve všech grafech.
   const categoryColors = { 'Jídlo': '#F76707', 'Benzín': '#2F6BFF', 'Parkování': '#4DABF7', 'Předplatné': '#7950F2', 'Zábava': '#E64980', 'Rozmar': '#F2B705', 'Elektronika': '#12B886', 'Auto': '#1098AD', 'Drogerie': '#C2255C', 'Nezařazeno': '#868E96', 'Nepočítá se': '#CED4DA', 'Kočka': '#A9743A', 'Domácnost': '#82C91E', 'Hry': '#5C7CFA', 'Doprava': '#1C7ED6', 'Cestování': '#15AABF', 'Miky': '#0CA678', 'Rodina': '#E8590C', 'Bydlení': '#D9480F', 'Odvody': '#868E3A', 'Investice': '#2B8A3E', 'Patrice': '#E03174' };
   const extraColors = ['#0CA678', '#D9480F', '#5F3DC4', '#74B816', '#C92A2A', '#1971C2', '#E8590C', '#9C36B5'];
+  // Paleta, ze které si uživatel může vybrat barvu kategorie.
+  const pickColors = ['#F76707', '#F2B705', '#82C91E', '#2B8A3E', '#0CA678', '#15AABF', '#1C7ED6', '#5C7CFA', '#7950F2', '#BE4BDB', '#E64980', '#C92A2A', '#A9743A', '#868E96'];
+  // Kategorie, které aplikace potřebuje: Nezařazeno je náhradní kategorie, Nepočítá se vylučuje platby ze součtů.
+  const lockedCategories = ['Nezařazeno', 'Nepočítá se'];
   function catColor(name) {
+    let own = '';
+    try { own = data?.categories?.find(item => item.name === name)?.color; } catch { /* data ještě nejsou načtená */ }
+    if (own) return own;
     if (categoryColors[name]) return categoryColors[name];
     if (name === 'Ostatní') return '#ADB5BD';
     let hash = 0; for (const char of String(name)) hash = (hash * 31 + char.codePointAt(0)) >>> 0;
@@ -264,6 +271,7 @@
       categoryMigrated = true;
     }
     if (!value.categoryBudgets || typeof value.categoryBudgets !== 'object' || Array.isArray(value.categoryBudgets)) value.categoryBudgets = {};
+    if (!Array.isArray(value.recurring)) value.recurring = [];
     Object.keys(value.categoryBudgets).forEach(name => { if (!Number.isInteger(value.categoryBudgets[name]) || value.categoryBudgets[name] <= 0) delete value.categoryBudgets[name]; });
     return value;
   }
@@ -291,16 +299,40 @@
   let iconTarget = null;
   let editTarget = null;
   let logoTarget = null;
-  let toastTimer;
+  let toastTimer, toastAction = null;
+  let selecting = false;
+  const selected = new Set();
+  let catEditName = null, catEditIcon = 'ostatní', catEditColor = '';
+  let recurringCategory = 'Předplatné';
+  let confirmResolve = null;
   let budgetEditing = false;
   let filtersOpen = false;
 
-  function toast(message) {
+  function toast(message, actionLabel = '', onAction = null) {
     const el = $('toast');
-    el.textContent = message;
+    el.innerHTML = `<span>${escapeHtml(message)}</span>${actionLabel ? `<button type="button" class="toast-action">${escapeHtml(actionLabel)}</button>` : ''}`;
+    toastAction = onAction;
     el.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => el.classList.remove('show'), 3200);
+    toastTimer = setTimeout(() => { el.classList.remove('show'); toastAction = null; }, actionLabel ? 7000 : 3200);
+  }
+  // Před každou mazací nebo hromadnou změnou se uloží kopie stavu; „Vrátit“ ji obnoví.
+  function undoToast(message, before) {
+    toast(message, 'Vrátit', () => {
+      data = migrate(JSON.parse(before));
+      selected.clear();
+      document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
+      save(); render(); toast('Vráceno zpět.');
+    });
+  }
+  // Vlastní potvrzovací okno místo systémového confirm().
+  function askConfirm(title, text, okLabel = 'Smazat') {
+    $('confirmTitle').textContent = title;
+    $('confirmText').textContent = text;
+    $('confirmOk').textContent = okLabel;
+    $('confirmDialog').showModal();
+    $('confirmCancel').focus();
+    return new Promise(resolve => { confirmResolve = resolve; });
   }
   if (!cloud && !readJson(APP_KEY)) save();
   function category(name) { return data.categories.find(item => item.name === name) || data.categories.find(item => item.name === 'Nezařazeno'); }
@@ -308,11 +340,17 @@
   function categoryName(row) { return category(row.category) ? row.category : 'Nezařazeno'; }
   function merchantKey(description) { return normalize(description); }
   function logoId(description) { return logoRules.find(([rule]) => rule.test(merchantKey(description)))?.[1] || null; }
+  // Vlastní logo má přednost; hodnota 'none' znamená, že uživatel automatické logo vypnul.
+  function logoSource(description) {
+    const custom = data.brandOverrides[merchantKey(description)];
+    if (custom === 'none') return '';
+    if (custom) return custom;
+    const known = logoId(description);
+    return known ? logoPath(known) : '';
+  }
   function logoMarkup(row) {
-    const custom = data.brandOverrides[merchantKey(row.description)];
-    const known = logoId(row.description);
-    const src = custom || (known ? logoPath(known) : '');
-    return `<span class="brand-logo" aria-hidden="true">${src ? `<img src="${escapeHtml(src)}" alt=""${!custom && tileLogos.has(known) ? ' class="tile"' : ''}>` : categoryIcon(categoryName(row))}</span>`;
+    const src = logoSource(row.description);
+    return `<span class="brand-logo" aria-hidden="true">${src ? `<img src="${escapeHtml(src)}" alt=""${src.startsWith('assets/') && tileLogos.has(logoId(row.description)) ? ' class="tile"' : ''}>` : categoryIcon(categoryName(row))}</span>`;
   }
   function dateObject(iso) { return new Date(`${iso}T12:00:00Z`); }
   function displayDate(iso) { return dateShort.format(dateObject(iso)); }
@@ -479,6 +517,14 @@
   function transactionRow(row, detailed = false, showDate = false) {
     const cat = categoryName(row);
     const meta = [showDate ? `<span>${displayDate(row.date)}</span>` : '', `<span class="${detailed ? 'tx-cat' : ''}">${escapeHtml(cat)}</span>`, row.note ? `<span>${escapeHtml(row.note)}</span>` : ''].filter(Boolean).join('');
+    if (detailed && selecting) {
+      const on = selected.has(row.id);
+      return `<div class="tx ${on ? 'selected' : ''} ${cat === 'Nepočítá se' ? 'excluded' : ''}" role="checkbox" aria-checked="${on}" tabindex="0" data-action="toggle-select" data-id="${escapeHtml(row.id)}" aria-label="Vybrat ${escapeHtml(row.description)}, ${positiveMoney(row.cents)}">
+      <span class="select-mark" aria-hidden="true">${uiIcon('check')}</span>
+      <div class="tx-main"><span class="tx-name">${escapeHtml(row.description)}</span><span class="tx-meta">${meta}</span></div>
+      <span class="tx-amount">${positiveMoney(row.cents)}</span>
+    </div>`;
+    }
     return `<div class="tx ${cat === 'Nepočítá se' ? 'excluded' : ''}" role="button" tabindex="0" data-action="edit" data-id="${escapeHtml(row.id)}" aria-label="Upravit ${escapeHtml(row.description)}, ${positiveMoney(row.cents)}">
       ${logoMarkup(row)}
       <div class="tx-main"><span class="tx-name">${escapeHtml(row.description)}</span><span class="tx-meta">${meta}</span></div>
@@ -638,8 +684,9 @@
         <div class="scroller" data-scroller="hide"><button type="button" class="scroller-button start" data-scroll="-1" aria-label="Posunout kategorie zpět" hidden>${uiIcon('left')}</button><div class="chip-scroll" id="filterCategories" data-track role="group" aria-label="Kategorie">${filterCategoryButtons()}</div><button type="button" class="scroller-button end" data-scroll="1" aria-label="Posunout kategorie dál" hidden>${uiIcon('right')}</button></div>
       </section>
       <section class="panel results">
-        <div class="results-head"><p id="resultsSummary" class="results-summary" aria-live="polite"></p><div class="results-tools"><button type="button" class="text-button" id="clearFilters" data-action="clear-filters">Vymazat filtry</button><span id="sortSwitch">${segmented('sort', filters.sort, [['newest', 'Nejnovější'], ['oldest', 'Nejstarší'], ['highest', 'Nejvyšší']], 'Seřazení')}</span></div></div>
+        <div class="results-head"><p id="resultsSummary" class="results-summary" aria-live="polite"></p><div class="results-tools"><button type="button" class="text-button" id="clearFilters" data-action="clear-filters">Vymazat filtry</button><button type="button" class="text-button" data-action="export-csv">Stáhnout CSV</button><button type="button" class="secondary-button" id="selectToggle" data-action="toggle-selecting" aria-pressed="${selecting}">${selecting ? 'Hotovo' : 'Vybrat'}</button><span id="sortSwitch">${segmented('sort', filters.sort, [['newest', 'Nejnovější'], ['oldest', 'Nejstarší'], ['highest', 'Nejvyšší']], 'Seřazení')}</span></div></div>
         <div id="transactionResults" class="tx-list"></div>
+        <div id="bulkBar" class="bulk-bar" hidden></div>
       </section>`;
   }
   function renderTransactionResults() {
@@ -648,6 +695,15 @@
     $('transactionResults').innerHTML = rows.length ? (filters.sort === 'highest' ? `<section class="day">${rows.map(row => transactionRow(row, true, true)).join('')}</section>` : dayGroupsMarkup(rows, true)) : `<div class="empty-state"><p>Nic neodpovídá vybraným filtrům.</p><button type="button" class="secondary-button" data-action="clear-filters">Vymazat filtry</button></div>`;
     $('resultsSummary').innerHTML = `<strong>${moneyCents(sumCents(rows))}</strong><span>${rows.length} ${countWord(rows.length)}</span>`;
     $('clearFilters').hidden = !(hasContentFilter() || filters.from || filters.to);
+    const visible = new Set(rows.map(row => row.id));
+    [...selected].forEach(id => { if (!visible.has(id)) selected.delete(id); });
+    const bar = $('bulkBar');
+    bar.hidden = !selecting;
+    if (selecting) {
+      const count = selected.size;
+      const all = rows.length && count === rows.length;
+      bar.innerHTML = `<strong>${count ? `Vybráno ${count} ${countWord(count)} · ${moneyCents(sumCents(data.transactions.filter(row => selected.has(row.id))))}` : 'Klepni na platby, které chceš upravit'}</strong><button type="button" data-action="select-all">${all ? 'Zrušit výběr' : 'Vybrat vše'}</button><button type="button" data-action="bulk-category" ${count ? '' : 'disabled'}>Změnit kategorii</button><button type="button" class="bulk-danger" data-action="bulk-delete" ${count ? '' : 'disabled'}>Smazat</button>`;
+    }
   }
   // Změna filtru na stránce Transakce bez překreslení celé stránky: rozložení i fokus zůstanou na místě.
   function refreshTransactions() {
@@ -762,6 +818,7 @@
       if (!offline) { data.updatedAt = data.updatedAt || Date.now(); try { localStorage.setItem(storageKey, JSON.stringify(data)); } catch {} push(); } else setSync('error');
     }
     selectedMonth = currentMonth; periodBeforeRange = currentMonth; resetFilters();
+    runRecurring();
     document.body.dataset.auth = 'in';
     $('authGate').hidden = true;
     animateNext = true;
@@ -995,22 +1052,149 @@
   function renderCategories() {
     const counts = new Map(data.categories.map(item => [item.name, 0]));
     data.transactions.forEach(row => counts.set(categoryName(row), (counts.get(categoryName(row)) || 0) + 1));
-    const managers = data.categories.map(item => `<div class="manager-row" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${counts.get(item.name)} ${countWord(counts.get(item.name))}</span></div><button type="button" class="icon-button" data-action="pick-icon" data-name="${escapeHtml(item.name)}" aria-label="Změnit ikonu kategorie ${escapeHtml(item.name)}" data-tip="Změnit ikonu">${icon('upravit')}</button>${!seed.baseCategories.includes(item.name) ? `<button type="button" class="icon-button danger" data-action="remove-category" data-name="${escapeHtml(item.name)}" aria-label="Smazat kategorii ${escapeHtml(item.name)}" data-tip="Smazat kategorii">${icon('smazat')}</button>` : '<span></span>'}</div>`).join('');
+    const last = data.categories.length - 1;
+    const managers = data.categories.map((item, index) => `<div class="manager-row" style="--cat:${catColor(item.name)}"><span class="cat-icon">${icon(item.icon)}</span><div class="manager-main"><span class="name">${escapeHtml(item.name)}</span><span class="meta">${counts.get(item.name)} ${countWord(counts.get(item.name))}${data.categoryBudgets[item.name] ? ` · limit ${wholeCrowns.format(data.categoryBudgets[item.name] / 100)}` : ''}</span></div><button type="button" class="icon-button" data-action="move-category" data-name="${escapeHtml(item.name)}" data-value="-1" aria-label="Posunout ${escapeHtml(item.name)} výš" data-tip="Posunout výš" ${index === 0 ? 'disabled' : ''}>${uiIcon('up')}</button><button type="button" class="icon-button" data-action="move-category" data-name="${escapeHtml(item.name)}" data-value="1" aria-label="Posunout ${escapeHtml(item.name)} níž" data-tip="Posunout níž" ${index === last ? 'disabled' : ''}>${uiIcon('down')}</button><button type="button" class="icon-button" data-action="edit-category" data-name="${escapeHtml(item.name)}" aria-label="Upravit kategorii ${escapeHtml(item.name)}" data-tip="Upravit, sloučit, smazat">${icon('upravit')}</button></div>`).join('');
     const logos = Object.entries(logoNames).map(([id, name]) => `<div class="logo-tile"><span class="brand-logo" aria-hidden="true">${logoImg(id, true)}</span><span>${escapeHtml(name)}</span></div>`).join('');
     const unmatched = [...new Set(data.transactions.map(row => row.description))].filter(name => !logoId(name)).sort((a, b) => a.localeCompare(b, 'cs'));
     const customLogos = Object.keys(data.brandOverrides).length;
     const limitCount = Object.keys(data.categoryBudgets).length;
     const limitSummary = data.budgetCents ? `Měsíc ${wholeCrowns.format(data.budgetCents / 100)}` : 'Měsíční limit nenastaven';
     const missing = unmatched.filter(name => !data.brandOverrides[merchantKey(name)]).length;
+    const merchantName = key => data.transactions.find(row => merchantKey(row.description) === key)?.description || key;
+    const customList = Object.entries(data.brandOverrides).map(([key, value]) => `<div class="custom-logo-row"><span class="brand-logo" aria-hidden="true">${value === 'none' ? icon('ostatní') : `<img src="${escapeHtml(value)}" alt="">`}</span><span>${escapeHtml(merchantName(key))}${value === 'none' ? ' <span class="muted small">· logo vypnuté</span>' : ''}</span><button type="button" class="text-button" data-action="remove-logo" data-name="${escapeHtml(key)}">${value === 'none' ? 'Zapnout logo' : 'Odebrat'}</button></div>`).join('');
+    const recurringRows = data.recurring.map(item => `<div class="recurring-row" style="--cat:${catColor(item.category)}"><span class="cat-icon">${categoryIcon(item.category)}</span><div class="manager-main"><span class="name">${escapeHtml(item.description)}</span><span class="meta">každý ${Number(item.day)}. · ${escapeHtml(category(item.category) ? item.category : 'Nezařazeno')}</span></div><strong>${positiveMoney(item.cents)}</strong><button type="button" class="icon-button danger" data-action="remove-recurring" data-id="${escapeHtml(item.id)}" aria-label="Zrušit opakování ${escapeHtml(item.description)}" data-tip="Zrušit opakování">${icon('smazat')}</button></div>`).join('');
+    const recurringBody = `<p class="field-help">Platby, které se opakují každý měsíc (nájem, paušál, předplatné). Aplikace je sama přidá v daný den; v importu se pak neobjeví dvakrát, protože je hlídá kontrola duplicit. Opakování jde zapnout i v úpravě kterékoli platby.</p>${recurringRows ? `<div class="recurring-list">${recurringRows}</div>` : ''}<form id="recurringForm" class="recurring-form"><label class="field wide-sm">Popis<input type="text" name="description" maxlength="160" placeholder="Nájem" required></label><label class="field">Částka Kč<input type="text" name="amount" inputmode="decimal" placeholder="12 000" required></label><label class="field">Den<input type="number" name="day" min="1" max="31" value="${today.getDate()}" required></label><div class="field-block wide-sm"><span class="field-caption">Kategorie</span><button type="button" class="select-button" data-action="pick-recurring-category">${categoryIcon(recurringCategory)}<span>${escapeHtml(recurringCategory)}</span>${uiIcon('chevron', 'chevron')}</button></div><button type="submit" class="primary-button wide-sm">Přidat</button></form>`;
     const categoryBody = `<div class="category-manager">${managers}</div><form id="newCategoryForm" class="new-category"><label class="field">Nová kategorie<input type="text" name="name" maxlength="40" placeholder="Název kategorie" required></label><button type="button" class="select-button" data-action="pick-icon" data-name="_draft">${icon(draftIcon)}<span>Vybrat ikonu</span></button><button type="submit" class="primary-button">Přidat kategorii</button></form>`;
-    const logoBody = `<p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek.</p><h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div><h3 class="sub-head">Připravená loga</h3><div class="logos-grid">${logos}</div>`;
+    const logoBody = `<p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek. Logo konkrétního obchodu změníš nebo vypneš i v úpravě platby.</p>${customList ? `<h3 class="sub-head">Vlastní a vypnutá loga</h3><div class="custom-logo-list">${customList}</div>` : ''}<h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div><h3 class="sub-head">Připravená loga</h3><div class="logos-grid">${logos}</div>`;
     return `<div class="page-head"><h1>Nastavení</h1></div>
       <a class="panel link-panel" href="#/limits"><span class="link-panel-text"><h2>Limity</h2><span class="field-help">${limitSummary} · ${limitCount ? `${limitCount} ${limitCount === 1 ? 'kategorie' : limitCount < 5 ? 'kategorie' : 'kategorií'} s limitem` : 'kategorie bez limitů'}</span></span>${uiIcon('right', 'link-panel-arrow')}</a>
       ${disclosure('looks', 'Vzhled', `<span class="current-wallpaper"><i style="background-image:url(assets/bg/${currentWallpaper().id}-nahled.webp)"></i>${escapeHtml(currentWallpaper().name)} · ${wallpapers.length} tapet</span>`, `<p class="field-help">Barva a vzor pod sklem. Mění se v celé aplikaci.</p><div class="wallpaper-grid" role="radiogroup" aria-label="Tapeta">${wallpaperButtons(true)}</div>`)}
       ${disclosure('categories', 'Kategorie', `${data.categories.length} kategorií`, categoryBody)}
+      ${disclosure('recurring', 'Opakované platby', data.recurring.length ? `${data.recurring.length} ${data.recurring.length === 1 ? 'platba' : data.recurring.length < 5 ? 'platby' : 'plateb'} · ${wholeCrowns.format(data.recurring.reduce((sum, item) => sum + Math.abs(item.cents), 0) / 100)} měsíčně` : 'žádné', recurringBody)}
       ${disclosure('logos', 'Loga obchodů', `${Object.keys(logoNames).length + customLogos} log${missing ? ` · ${missing} bez loga` : ''}`, logoBody)}
       ${accountPanel()}
-      <section class="panel"><div class="panel-head"><h2>Data a záloha</h2></div><p class="field-help">${session ? 'Data jsou uložená v tvém účtu. Záloha v souboru se hodí pro přenos z jiné instalace nebo jako pojistka.' : 'Všechno se ukládá jen v tomto prohlížeči. Zálohu si stáhni před vymazáním dat prohlížeče nebo přechodem na jiné zařízení.'}</p><div class="form-actions"><button type="button" class="secondary-button" data-action="download-backup">Stáhnout zálohu JSON</button><button type="button" class="secondary-button" data-action="restore-backup">Obnovit ze zálohy</button></div></section>`;
+      <section class="panel"><div class="panel-head"><h2>Data a záloha</h2></div><p class="field-help">${session ? 'Data jsou uložená v tvém účtu. Záloha v souboru se hodí pro přenos z jiné instalace nebo jako pojistka.' : 'Všechno se ukládá jen v tomto prohlížeči. Zálohu si stáhni před vymazáním dat prohlížeče nebo přechodem na jiné zařízení.'}</p><div class="form-actions"><button type="button" class="secondary-button" data-action="download-backup">Stáhnout zálohu JSON</button><button type="button" class="secondary-button" data-action="export-csv-all">Stáhnout platby jako CSV</button><button type="button" class="secondary-button" data-action="restore-backup">Obnovit ze zálohy</button></div></section>`;
+  }
+  function monthName(key) { const [y, m] = String(key).split('-').map(Number); const text = monthFormat.format(new Date(y, m - 1, 1)); return text; }
+  function nextMonthKey(key) { const [y, m] = key.split('-').map(Number); const d = new Date(y, m, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`; }
+  // Opakované platby: doplní všechny výskyty od posledního do dneška. ID je pevné, takže se nic nepřidá dvakrát.
+  function applyRecurring() {
+    if (!Array.isArray(data.recurring) || !data.recurring.length) return 0;
+    const todayIso = today.toLocaleDateString('sv-SE');
+    const ids = new Set(data.transactions.map(row => row.id));
+    let added = 0;
+    data.recurring.forEach(item => {
+      let guard = 0;
+      while (item.next <= currentMonth && guard++ < 36) {
+        const [y, m] = item.next.split('-').map(Number);
+        const day = Math.min(Number(item.day) || 1, new Date(y, m, 0).getDate());
+        const date = `${item.next}-${String(day).padStart(2, '0')}`;
+        if (date > todayIso) break;
+        const id = `rec-${item.id}-${item.next}`;
+        if (!ids.has(id)) { data.transactions.push({ id, date, description: item.description, cents: item.cents, category: item.category, note: item.note || '', source: 'opakovaná' }); ids.add(id); added++; }
+        item.next = nextMonthKey(item.next);
+      }
+    });
+    return added;
+  }
+  function runRecurring() {
+    const added = applyRecurring();
+    if (added) { save(); toast(`Přidané opakované platby: ${added}.`); }
+  }
+  function addRecurring({ description, cents, category: cat, day, note = '', next }) {
+    data.recurring.push({ id: makeId(), description, cents, category: cat, day, note, next });
+  }
+  function csvField(value) { const text = String(value ?? ''); return /[";\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text; }
+  function exportCsv(rows, label) {
+    const lines = [['Datum', 'Obchod', 'Kategorie', 'Částka Kč', 'Poznámka', 'Započítáno'].join(';')];
+    [...rows].sort((a, b) => a.date.localeCompare(b.date)).forEach(row => lines.push([row.date, row.description, categoryName(row), (Math.abs(row.cents) / 100).toFixed(2).replace('.', ','), row.note || '', categoryName(row) === 'Nepočítá se' ? 'ne' : 'ano'].map(csvField).join(';')));
+    const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `vydaje-${label}-${new Date().toISOString().slice(0, 10)}.csv`; a.click();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+    toast(`Staženo ${rows.length} ${countWord(rows.length)} jako CSV.`);
+  }
+  // Přejmenování: přepíše platby, limity, opakování, filtr i rozpracovaný import.
+  function renameCategory(from, to) {
+    data.transactions.forEach(row => { if (row.category === from) row.category = to; });
+    data.recurring.forEach(item => { if (item.category === from) item.category = to; });
+    if (data.categoryBudgets[from]) { data.categoryBudgets[to] = data.categoryBudgets[from]; delete data.categoryBudgets[from]; }
+    importPreview.forEach(item => { if (item.category === from) item.category = to; });
+    if (filters.category === from) filters.category = to;
+    if (draftCategory === from) draftCategory = to;
+    if (recurringCategory === from) recurringCategory = to;
+  }
+  function moveCategoryRows(from, to) {
+    data.transactions.forEach(row => { if (row.category === from) row.category = to; });
+    data.recurring.forEach(item => { if (item.category === from) item.category = to; });
+    importPreview.forEach(item => { if (item.category === from) item.category = to; });
+    if (filters.category === from) filters.category = '';
+    if (draftCategory === from) draftCategory = 'Nezařazeno';
+    if (recurringCategory === from) recurringCategory = 'Nezařazeno';
+  }
+  function categoryUsage(name) {
+    const count = data.transactions.filter(row => row.category === name).length;
+    const limit = data.categoryBudgets[name];
+    const repeat = data.recurring.filter(item => item.category === name).length;
+    return { count, limit, repeat };
+  }
+  function usageText(name, target) {
+    const { count, limit, repeat } = categoryUsage(name);
+    const parts = [count ? `${count} ${countWord(count)} ${count >= 2 && count <= 4 ? 'se přesunou' : 'se přesune'} do kategorie ${target}` : 'Nemá žádné platby'];
+    if (repeat) parts.push(repeat === 1 ? 'opakovaná platba se přesune taky' : `opakované platby (${repeat}) se přesunou taky`);
+    if (limit) parts.push(`měsíční limit ${wholeCrowns.format(limit / 100)} ${target === 'Nezařazeno' || data.categoryBudgets[target] ? 'zmizí' : 'přejde na ' + target}`);
+    return parts.join(', ') + '. Hned potom to jde vrátit.';
+  }
+  async function deleteCategory(name) {
+    if (lockedCategories.includes(name)) return;
+    if (!await askConfirm(`Smazat kategorii ${name}?`, usageText(name, 'Nezařazeno'))) return;
+    const before = JSON.stringify(data);
+    moveCategoryRows(name, 'Nezařazeno');
+    delete data.categoryBudgets[name];
+    data.categories = data.categories.filter(item => item.name !== name);
+    $('catEditDialog').close(); save(); render(); undoToast(`Kategorie ${name} je smazaná.`, before);
+  }
+  async function mergeCategory(from, to) {
+    if (lockedCategories.includes(from) || from === to || !category(to)) return;
+    if (!await askConfirm(`Sloučit ${from} do ${to}?`, usageText(from, to), 'Sloučit')) return;
+    const before = JSON.stringify(data);
+    moveCategoryRows(from, to);
+    if (data.categoryBudgets[from] && !data.categoryBudgets[to] && to !== 'Nezařazeno') data.categoryBudgets[to] = data.categoryBudgets[from];
+    delete data.categoryBudgets[from];
+    data.categories = data.categories.filter(item => item.name !== from);
+    $('catEditDialog').close(); save(); render(); undoToast(`${from} je sloučená do ${to}.`, before);
+  }
+  function catEditColorsMarkup() {
+    return `<button type="button" class="color-swatch auto" role="radio" aria-checked="${!catEditColor}" data-action="cat-color" data-value="">Automaticky</button>` + pickColors.map(color => `<button type="button" class="color-swatch" role="radio" aria-checked="${catEditColor === color}" data-action="cat-color" data-value="${color}" style="--swatch:${color}" aria-label="Barva ${color}"></button>`).join('');
+  }
+  function openCategoryEditor(name) {
+    const item = data.categories.find(entry => entry.name === name); if (!item) return;
+    catEditName = name; catEditIcon = item.icon; catEditColor = item.color || '';
+    const locked = lockedCategories.includes(name);
+    const form = $('catEditForm');
+    form.elements.name.value = name; form.elements.name.readOnly = locked;
+    $('catEditLock').hidden = !locked;
+    $('catEditLock').textContent = name === 'Nezařazeno' ? 'Nezařazeno je náhradní kategorie pro platby ze smazaných kategorií, proto nejde přejmenovat ani smazat. Ikonu a barvu změnit můžeš.' : 'Nepočítá se vyřazuje platby ze součtů, proto nejde přejmenovat ani smazat. Ikonu a barvu změnit můžeš.';
+    $('catEditTitle').textContent = `Upravit kategorii`;
+    $('catEditIcon').innerHTML = `${icon(catEditIcon)}<span>${escapeHtml(catEditIcon)}</span>${uiIcon('chevron', 'chevron')}`;
+    $('catEditColors').innerHTML = catEditColorsMarkup();
+    $('catEditMergeBlock').hidden = locked; $('catEditDelete').hidden = locked;
+    $('catEditMerge').innerHTML = `${icon('převod')}<span>Vybrat kategorii</span>${uiIcon('chevron', 'chevron')}`;
+    $('catEditDialog').showModal();
+  }
+  function editLogoState() {
+    if (!editTarget) return;
+    const key = merchantKey(editTarget.description);
+    const custom = data.brandOverrides[key];
+    const src = logoSource(editTarget.description);
+    $('editLogo').innerHTML = src ? `<img src="${escapeHtml(src)}" alt=""${src.startsWith('assets/') && tileLogos.has(logoId(editTarget.description)) ? ' class="tile"' : ''}>` : categoryIcon(categoryName(editTarget));
+    const reset = $('editLogoReset');
+    reset.hidden = !custom && !logoId(editTarget.description);
+    reset.textContent = custom === 'none' ? 'Zapnout automatické logo' : custom ? 'Odebrat vlastní logo' : 'Bez loga';
+    $('editLogoUpload').textContent = custom && custom !== 'none' ? 'Nahrát jiné' : 'Nahrát vlastní';
+    const repeat = data.recurring.find(item => merchantKey(item.description) === key && item.cents === editTarget.cents);
+    $('editRepeatNote').textContent = repeat ? `Opakuje se každý měsíc ${repeat.day}. dne.` : `Přidá se sama každý měsíc ${Number(editTarget.date.slice(8, 10))}. dne.`;
+    $('editRepeat').textContent = repeat ? 'Zrušit opakování' : 'Opakovat každý měsíc';
+    $('editRepeat').dataset.repeat = repeat ? repeat.id : '';
   }
   function makeId() { return globalThis.crypto?.randomUUID?.() || `new-${Date.now()}-${Math.random().toString(36).slice(2)}`; }
   function parseBankDate(raw) {
@@ -1087,7 +1271,8 @@
     render();
   }
   function inferredCategory(description) {
-    const existing = data.transactions.find(row => merchantKey(row.description) === merchantKey(description));
+    const key = merchantKey(description);
+    const existing = data.transactions.reduce((best, row) => merchantKey(row.description) === key && (!best || row.date > best.date) ? row : best, null);
     if (existing) return categoryName(existing);
     const id = logoId(description);
     if (['albert','billa','rohlik','kaufland','globus','wolt','aluha','sunny'].includes(id)) return 'Jídlo';
@@ -1349,11 +1534,12 @@
   window.addEventListener('scroll', hideTip, { passive: true, capture: true });
   function deleteRow(id, fromDialog = false) {
     const row = data.transactions.find(item => item.id === id);
-    if (!row || !confirm(`Smazat výdaj ${row.description} (${displayDate(row.date)}, ${positiveMoney(row.cents)})?`)) return;
+    if (!row) return;
+    const before = JSON.stringify(data);
     data.transactions = data.transactions.filter(item => item.id !== id);
     if (fromDialog) $('editDialog').close();
     if (editTarget?.id === id) editTarget = null;
-    save(); render(); toast('Výdaj byl smazán.');
+    save(); render(); undoToast(`Smazáno: ${row.description}, ${positiveMoney(row.cents)}.`, before);
   }
   document.addEventListener('keydown', event => {
     if ((event.key === 'Enter' || event.key === ' ') && event.target.matches?.('[role="button"][data-action]')) { event.preventDefault(); event.target.click(); }
@@ -1398,13 +1584,35 @@
       }
       else if (categoryTarget?.type === 'transaction') {
         const row = data.transactions.find(item => item.id === categoryTarget.id);
-        if (row) { row.category = value; save(); }
+        if (row) {
+          row.category = value; save();
+          const key = merchantKey(row.description);
+          const others = data.transactions.filter(item => item !== row && merchantKey(item.description) === key && categoryName(item) !== value);
+          if (others.length) setTimeout(() => toast(`${row.description}: ${others.length === 1 ? 'další platba je' : `další ${others.length} ${countWord(others.length)} ${others.length <= 4 ? 'jsou' : 'je'}`} v jiné kategorii.`, `Přesunout do ${value}`, () => {
+            const before = JSON.stringify(data);
+            others.forEach(item => { item.category = value; }); save(); render();
+            undoToast(`Všechny platby z ${row.description} jsou v kategorii ${value}.`, before);
+          }), 0);
+        }
+      }
+      else if (categoryTarget?.type === 'bulk') {
+        const before = JSON.stringify(data);
+        const rows = data.transactions.filter(item => selected.has(item.id));
+        rows.forEach(item => { item.category = value; });
+        save(); $('categoryDialog').close(); render(); undoToast(`${rows.length} ${countWord(rows.length)} přesunuto do ${value}.`, before); return;
+      }
+      else if (categoryTarget?.type === 'merge') { $('categoryDialog').close(); mergeCategory(catEditName, value); return; }
+      else if (categoryTarget?.type === 'recurring') {
+        recurringCategory = value; $('categoryDialog').close();
+        const button = document.querySelector('[data-action="pick-recurring-category"]');
+        if (button) button.innerHTML = `${categoryIcon(value)}<span>${escapeHtml(value)}</span>${uiIcon('chevron', 'chevron')}`;
+        return;
       }
       else if (categoryTarget?.type === 'import') importPreview[categoryTarget.index].category = value;
       $('categoryDialog').close(); if (categoryTarget?.type !== 'draft') render();
       if ($('editDialog').open) editCategoryLabel();
     }
-    else if (action === 'pick-icon') openIconPicker(name === '_draft' ? { type: 'draft' } : { type: 'category', name });
+    else if (action === 'pick-icon') openIconPicker(name === '_draft' ? { type: 'draft' } : name === '_edit' ? { type: 'edit' } : { type: 'category', name });
     else if (action === 'choose-icon') {
       if (iconTarget?.type === 'draft') {
         draftIcon = value;
@@ -1412,6 +1620,7 @@
         if (draftButton) draftButton.innerHTML = `${icon(value)}<span>Vybrat ikonu</span>`;
       }
       else if (iconTarget?.type === 'category') { const item = category(iconTarget.name); if (item) { item.icon = value; save(); } }
+      else if (iconTarget?.type === 'edit') { catEditIcon = value; $('catEditIcon').innerHTML = `${icon(value)}<span>${escapeHtml(value)}</span>${uiIcon('chevron', 'chevron')}`; $('iconDialog').close(); return; }
       $('iconDialog').close(); if (iconTarget?.type !== 'draft') render();
     }
     else if (action === 'edit') {
@@ -1423,6 +1632,7 @@
       form.elements.description.value = editTarget.description;
       form.elements.note.value = editTarget.note || '';
       editCategoryLabel();
+      editLogoState();
       $('editDialog').showModal();
     }
     else if (action === 'preview-import') prepareImport($('importText').value);
@@ -1433,10 +1643,51 @@
       chosen.forEach(item => data.transactions.push({ id: makeId(), date: item.date, description: item.description, cents: item.cents, category: item.category, note: '', source: 'import' }));
       save(); importPreview = []; importRaw = ''; selectedMonth = chosen[0].date.slice(0, 7); periodBeforeRange = selectedMonth; resetFilters(); location.hash = '#/transactions'; render(); toast(`Importováno: ${chosen.length} ${countWord(chosen.length)}.`);
     }
-    else if (action === 'remove-category') {
-      if (!confirm(`Smazat kategorii ${name}? Její platby se přesunou do Nezařazeno.`)) return;
-      data.transactions.forEach(row => { if (row.category === name) row.category = 'Nezařazeno'; });
-      data.categories = data.categories.filter(item => item.name !== name); delete data.categoryBudgets[name]; if (filters.category === name) filters.category = ''; save(); render();
+    else if (action === 'remove-category') deleteCategory(name);
+    else if (action === 'edit-category') openCategoryEditor(name);
+    else if (action === 'cat-color') { catEditColor = value; $('catEditColors').innerHTML = catEditColorsMarkup(); $('catEditColors').querySelector('[aria-checked="true"]')?.focus(); }
+    else if (action === 'pick-merge') {
+      categoryTarget = { type: 'merge' };
+      $('categoryChoices').innerHTML = data.categories.filter(item => item.name !== catEditName).map(item => `<button type="button" class="choice-button" data-action="choose-category" data-value="${escapeHtml(item.name)}" style="--cat:${catColor(item.name)}">${icon(item.icon)}${escapeHtml(item.name)}</button>`).join('');
+      $('categoryDialog').showModal();
+    }
+    else if (action === 'move-category') {
+      const from = data.categories.findIndex(item => item.name === name), to = from + Number(value);
+      if (from < 0 || to < 0 || to >= data.categories.length) return;
+      [data.categories[from], data.categories[to]] = [data.categories[to], data.categories[from]];
+      save(); render();
+      document.querySelector(`[data-action="move-category"][data-name="${CSS.escape(name)}"][data-value="${value}"]`)?.focus({ preventScroll: true });
+    }
+    else if (action === 'toggle-selecting') { selecting = !selecting; selected.clear(); render(); }
+    else if (action === 'toggle-select') {
+      if (selected.has(id)) selected.delete(id); else selected.add(id);
+      button.classList.toggle('selected', selected.has(id)); button.setAttribute('aria-checked', String(selected.has(id)));
+      const scroll = window.scrollY; renderTransactionResults(); window.scrollTo(0, scroll);
+      document.querySelector(`[data-action="toggle-select"][data-id="${CSS.escape(id)}"]`)?.focus({ preventScroll: true });
+    }
+    else if (action === 'select-all') { const rows = filteredRows(); if (selected.size === rows.length) selected.clear(); else rows.forEach(row => selected.add(row.id)); renderTransactionResults(); }
+    else if (action === 'bulk-category') { if (selected.size) openCategoryPicker({ type: 'bulk' }); }
+    else if (action === 'bulk-delete') {
+      const count = selected.size; if (!count) return;
+      (async () => {
+        if (!await askConfirm(`Smazat ${count} ${countWord(count)}?`, `Celkem ${moneyCents(sumCents(data.transactions.filter(row => selected.has(row.id))))}. Hned potom to jde vrátit.`)) return;
+        const before = JSON.stringify(data);
+        data.transactions = data.transactions.filter(row => !selected.has(row.id)); selected.clear();
+        save(); render(); undoToast(`Smazáno ${count} ${countWord(count)}.`, before);
+      })();
+    }
+    else if (action === 'export-csv') exportCsv(filteredRows(), 'vyber');
+    else if (action === 'export-csv-all') exportCsv(data.transactions, 'vse');
+    else if (action === 'remove-logo') {
+      const before = JSON.stringify(data);
+      delete data.brandOverrides[name]; save(); render(); undoToast('Logo je odebrané.', before);
+    }
+    else if (action === 'pick-recurring-category') openCategoryPicker({ type: 'recurring' });
+    else if (action === 'remove-recurring') {
+      const item = data.recurring.find(entry => entry.id === id); if (!item) return;
+      const before = JSON.stringify(data);
+      data.recurring = data.recurring.filter(entry => entry.id !== id); save(); render();
+      undoToast(`${item.description} se už nebude opakovat. Dřív přidané platby zůstávají.`, before);
     }
     else if (action === 'upload-logo') { logoTarget = name; $('customLogoInput').click(); }
     else if (action === 'download-backup') downloadBackup();
@@ -1488,6 +1739,26 @@
       if (!name) return;
       if (data.categories.some(item => normalize(item.name) === normalize(name))) { toast('Tahle kategorie už existuje.'); return; }
       data.categories.push({ name, icon: draftIcon }); save(); render(); toast('Kategorie je přidaná.');
+    } else if (form.id === 'catEditForm' && catEditName) {
+      const item = data.categories.find(entry => entry.name === catEditName); if (!item) return;
+      const next = String(new FormData(form).get('name') || '').trim().replace(/\s+/g, ' ');
+      if (!next) { toast('Kategorie potřebuje název.'); form.elements.name.focus(); return; }
+      if (next !== item.name) {
+        if (lockedCategories.includes(item.name)) return;
+        if (data.categories.some(entry => entry !== item && normalize(entry.name) === normalize(next))) { toast(`Kategorie ${next} už existuje. Chceš je sloučit? Použij „Sloučit s jinou kategorií“.`); form.elements.name.focus(); return; }
+        if (!item.color) item.color = catColor(item.name);
+        renameCategory(item.name, next); item.name = next;
+      }
+      item.icon = catEditIcon;
+      if (catEditColor) item.color = catEditColor; else if (next === catEditName || categoryColors[item.name]) delete item.color;
+      catEditName = null; $('catEditDialog').close(); save(); render(); toast('Kategorie je uložená.');
+    } else if (form.id === 'recurringForm') {
+      const values = new FormData(form); const cents = parseCents(values.get('amount'));
+      const description = String(values.get('description') || '').trim(); const day = Math.min(31, Math.max(1, Math.round(Number(values.get('day')) || 1)));
+      if (!description) return;
+      if (!cents || cents <= 0) { toast('Zadej platnou částku větší než nula.'); form.elements.amount.focus(); return; }
+      addRecurring({ description, cents: -cents, category: recurringCategory, day, next: day > today.getDate() ? currentMonth : nextMonthKey(currentMonth) });
+      save(); render(); toast(`${description} se bude přidávat každý měsíc ${day}. dne.`);
     } else if (form.id === 'editForm' && editTarget) {
       const values = new FormData(form); const cents = parseCents(values.get('amount'));
       if (!cents || cents <= 0) { toast('Zadej platnou částku větší než nula.'); return; }
@@ -1498,6 +1769,27 @@
   $('deleteTransaction').addEventListener('click', () => {
     if (editTarget) deleteRow(editTarget.id, true);
   });
+  $('editLogoUpload').addEventListener('click', () => { if (editTarget) { logoTarget = editTarget.description; $('customLogoInput').click(); } });
+  $('editLogoReset').addEventListener('click', () => {
+    if (!editTarget) return;
+    const key = merchantKey(editTarget.description);
+    if (data.brandOverrides[key]) delete data.brandOverrides[key]; else data.brandOverrides[key] = 'none';
+    save(); editLogoState(); render();
+  });
+  $('editRepeat').addEventListener('click', () => {
+    if (!editTarget) return;
+    const id = $('editRepeat').dataset.repeat;
+    if (id) { data.recurring = data.recurring.filter(item => item.id !== id); save(); editLogoState(); render(); toast('Opakování je zrušené.'); return; }
+    const day = Number(editTarget.date.slice(8, 10));
+    addRecurring({ description: editTarget.description, cents: editTarget.cents, category: categoryName(editTarget), day, note: editTarget.note || '', next: nextMonthKey(editTarget.date.slice(0, 7)) });
+    const added = applyRecurring();
+    save(); editLogoState(); render(); toast(`${editTarget.description} se bude přidávat každý měsíc ${day}. dne.${added ? ` Doplněno zpětně: ${added}.` : ''}`);
+  });
+  $('confirmOk').addEventListener('click', () => { const resolve = confirmResolve; confirmResolve = null; $('confirmDialog').close(); resolve?.(true); });
+  $('confirmCancel').addEventListener('click', () => $('confirmDialog').close());
+  $('confirmDialog').addEventListener('close', () => { const resolve = confirmResolve; confirmResolve = null; resolve?.(false); });
+  $('catEditDelete').addEventListener('click', () => { if (catEditName) deleteCategory(catEditName); });
+  $('toast').addEventListener('click', event => { if (!event.target.closest('.toast-action')) return; const run = toastAction; toastAction = null; $('toast').classList.remove('show'); run?.(); });
   // Kliknutí myší na hlavičku rozbalovací sekce ji nemá zaměřit (jinak zůstane rámeček); klávesnice dál funguje.
   document.addEventListener('mousedown', event => { if (event.target.closest?.('.disclosure-head')) event.preventDefault(); });
   document.addEventListener('toggle', event => { const id = event.target.dataset?.section; if (id) { if (event.target.open) openSections.add(id); else openSections.delete(id); } }, true);
@@ -1529,7 +1821,7 @@
       const ctx = canvas.getContext('2d'); ctx.clearRect(0, 0, 64, 64);
       const scale = Math.min(64 / bitmap.width, 64 / bitmap.height); const width = bitmap.width * scale, height = bitmap.height * scale;
       ctx.drawImage(bitmap, (64 - width) / 2, (64 - height) / 2, width, height); bitmap.close();
-      data.brandOverrides[merchantKey(logoTarget)] = canvas.toDataURL('image/png'); save(); render(); toast('Logo je přidané.');
+      data.brandOverrides[merchantKey(logoTarget)] = canvas.toDataURL('image/png'); save(); render(); if ($('editDialog').open) editLogoState(); toast('Logo je přidané.');
     } catch { toast('Obrázek se nepodařilo načíst. Zkus PNG, JPG nebo WebP.'); }
     event.target.value = '';
   });
@@ -1537,8 +1829,8 @@
     const file = event.target.files?.[0]; if (!file) return;
     try {
       const restored = JSON.parse(await file.text());
-      if (!validState(restored) || !restored.transactions.every(row => typeof row.date === 'string' && typeof row.description === 'string' && Number.isInteger(row.cents) && row.cents < 0) || !restored.categories.every(item => typeof item.name === 'string' && iconNames.includes(item.icon))) throw new Error('invalid');
-      if (confirm('Obnovit zálohu? Současná data v prohlížeči se nahradí.')) { data = migrate(restored); save(); render(); toast('Záloha je obnovená.'); }
+      if (!validState(restored) || !restored.transactions.every(row => typeof row.date === 'string' && typeof row.description === 'string' && Number.isInteger(row.cents) && row.cents < 0) || !restored.categories.every(item => typeof item.name === 'string' && typeof item.icon === 'string')) throw new Error('invalid');
+      if (await askConfirm('Obnovit zálohu?', session ? 'Data v účtu se nahradí obsahem souboru. Hned potom to jde vrátit.' : 'Data v tomto prohlížeči se nahradí obsahem souboru. Hned potom to jde vrátit.', 'Obnovit')) { const before = JSON.stringify(data); data = migrate(restored); save(); render(); undoToast('Záloha je obnovená.', before); }
     } catch { toast('Tenhle soubor není záloha z aplikace Výdaje.'); }
     event.target.value = '';
   });
@@ -1558,6 +1850,6 @@
   $('quickAdd').addEventListener('click', () => { addTab = 'manual'; location.hash = '#/add'; render(); });
   window.addEventListener('hashchange', render);
   enhanceDates(document);
-  if (cloud) initCloud(); else render();
+  if (cloud) initCloud(); else { runRecurring(); render(); }
   if ('serviceWorker' in navigator && location.protocol.startsWith('http')) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();

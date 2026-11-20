@@ -100,8 +100,26 @@
       <label class="wide">Obchod nebo popis<input type="text" name="description" maxlength="160" required></label>
       <div class="wide field-block"><span class="field-caption">Kategorie</span><button type="button" id="editCategory" class="select-button" data-action="pick-category"></button></div>
       <label class="wide">Poznámka<input type="text" name="note" maxlength="300" placeholder="Volitelné upřesnění"></label>
+      <div class="wide field-block"><span class="field-caption">Logo obchodu</span><div class="logo-actions"><span id="editLogo" class="brand-logo" aria-hidden="true"></span><button type="button" id="editLogoUpload" class="secondary-button">Nahrát vlastní</button><button type="button" id="editLogoReset" class="text-button"></button></div></div>
+      <div class="wide field-block"><span class="field-caption">Opakování</span><div class="logo-actions"><span id="editRepeatNote" class="field-help"></span><button type="button" id="editRepeat" class="secondary-button">Opakovat každý měsíc</button></div></div>
       <div class="dialog-actions"><button type="button" id="deleteTransaction" class="danger-button">Smazat</button><button type="submit" class="primary-button">Uložit změny</button></div>
     </form>
+  </dialog>
+  <dialog id="catEditDialog" class="sheet" aria-labelledby="catEditTitle">
+    <div class="dialog-head"><h2 id="catEditTitle">Upravit kategorii</h2><button type="button" data-close-dialog="catEditDialog" class="icon-button" aria-label="Zavřít"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>
+    <form id="catEditForm" class="form-grid">
+      <label class="wide">Název<input type="text" name="name" maxlength="40" required></label>
+      <p id="catEditLock" class="wide field-help" hidden></p>
+      <div class="wide field-block"><span class="field-caption">Ikona</span><button type="button" id="catEditIcon" class="select-button" data-action="pick-icon" data-name="_edit"></button></div>
+      <div class="wide field-block"><span class="field-caption">Barva</span><div id="catEditColors" class="color-grid" role="radiogroup" aria-label="Barva kategorie"></div></div>
+      <div class="wide field-block" id="catEditMergeBlock"><span class="field-caption">Sloučit s jinou kategorií</span><button type="button" id="catEditMerge" class="select-button" data-action="pick-merge"></button><span class="field-help">Platby se přesunou do vybrané kategorie a tahle zmizí.</span></div>
+      <div class="dialog-actions"><button type="button" id="catEditDelete" class="danger-button">Smazat kategorii</button><button type="submit" class="primary-button">Uložit</button></div>
+    </form>
+  </dialog>
+  <dialog id="confirmDialog" class="sheet confirm-sheet" aria-labelledby="confirmTitle" aria-describedby="confirmText">
+    <h2 id="confirmTitle"></h2>
+    <p id="confirmText"></p>
+    <div class="dialog-actions"><button type="button" id="confirmCancel" class="secondary-button">Zrušit</button><button type="button" id="confirmOk" class="danger-button"></button></div>
   </dialog>
   <input type="file" id="customLogoInput" accept="image/png,image/jpeg,image/webp" hidden>
   <input type="file" id="restoreInput" accept="application/json,.json" hidden>
