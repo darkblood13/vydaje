@@ -187,7 +187,7 @@
   const ui = {
     close: '<path d="M6 6l12 12M18 6 6 18"/>', check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', chevron: '<path d="m7 10 5 5 5-5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', right: '<path d="m9.5 6 6 6-6 6"/>', left: '<path d="m14.5 6-6 6 6 6"/>', down: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
-    up: '<path d="M12 19V5m-6 6 6-6 6 6"/>', same: '<path d="M5 9h14M5 15h14"/>', swap: '<path d="M7 4 3.5 7.5 7 11M3.5 7.5h13M17 13l3.5 3.5L17 20m3.5-3.5h-13"/>', filter: '<path d="M4 6h16M7 12h10M10 18h4"/>', target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 1.5v3m0 15v3m10.5-10.5h-3m-15 0h-3"/>'
+    up: '<path d="M12 19V5m-6 6 6-6 6 6"/>', same: '<path d="M5 9h14M5 15h14"/>', swap: '<path d="M7 4 3.5 7.5 7 11M3.5 7.5h13M17 13l3.5 3.5L17 20m3.5-3.5h-13"/>', filter: '<path d="M4 6h16M7 12h10M10 18h4"/>', key: '<path d="M2.59 17.41A2 2 0 0 0 2 18.83V21a1 1 0 0 0 1 1h3a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h1a1 1 0 0 0 1-1v-1a1 1 0 0 1 1-1h.17a2 2 0 0 0 1.42-.59l.81-.81a6.5 6.5 0 1 0-4-4Z"/><circle cx="16.5" cy="7.5" r=".5"/>', target: '<circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4"/><path d="M12 1.5v3m0 15v3m10.5-10.5h-3m-15 0h-3"/>'
   };
   function uiIcon(name, className = '') { return `<svg class="icon ${className}" viewBox="0 0 24 24" aria-hidden="true">${ui[name]}</svg>`; }
   // Každá kategorie má jednu stálou barvu ve všech grafech.
@@ -305,6 +305,8 @@
   let catEditName = null, catEditIcon = 'ostatní', catEditColor = '';
   let recurringCategory = 'Předplatné';
   let confirmResolve = null;
+  let passwordFormOpen = false;
+  const googleMark = '<svg class="google-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09Z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"/><path fill="#FBBC05" d="M5.84 14.09A6.6 6.6 0 0 1 5.49 12c0-.73.13-1.43.35-2.09V7.07H2.18A11 11 0 0 0 1 12c0 1.78.43 3.45 1.18 4.93l3.66-2.84Z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15A10.6 10.6 0 0 0 12 1 11 11 0 0 0 2.18 7.07l3.66 2.84C6.71 7.31 9.14 5.38 12 5.38Z"/></svg>';
   let budgetEditing = false;
   let filtersOpen = false;
 
@@ -421,7 +423,7 @@
     return selectedMonth ? monthLabel(selectedMonth) : 'Všechna období';
   }
   function route() {
-    const name = location.hash.match(/^#\/(overview|transactions|analysis|compare|add|limits|categories)/)?.[1];
+    const name = location.hash.match(/^#\/(overview|transactions|analysis|compare|add|limits|categories|account)/)?.[1];
     return name || 'overview';
   }
   function applyWallpaper() {
@@ -435,14 +437,14 @@
   }
   function renderShell() {
     document.querySelectorAll('[data-nav]').forEach(link => {
-      if (link.dataset.nav === route() || (link.closest('.tabbar') && ((link.dataset.nav === 'analysis' && route() === 'compare') || (link.dataset.nav === 'categories' && route() === 'limits')))) link.setAttribute('aria-current', 'page');
+      if (link.dataset.nav === route() || (link.closest('.tabbar') && ((link.dataset.nav === 'analysis' && route() === 'compare') || (link.dataset.nav === 'categories' && (route() === 'limits' || route() === 'account'))))) link.setAttribute('aria-current', 'page');
       else link.removeAttribute('aria-current');
     });
     $('periodLabel').textContent = rangeDescription();
     $('periodLabel').classList.toggle('is-range', !!(filters.from || filters.to));
     $('rangePicker').classList.toggle('active', !!(filters.from || filters.to));
     $('todayButton').hidden = selectedMonth === currentMonth && !filters.from && !filters.to;
-    $('railStatus').innerHTML = railStatusMarkup() + (session ? `<p class="rail-sync"><span data-sync="${syncState}">${syncText[syncState]}</span></p>` : '');
+    $('railStatus').innerHTML = railStatusMarkup() + (session ? `<a class="rail-account" href="#/account" ${route() === 'account' ? 'aria-current="page"' : ''}>${avatarMarkup(32)}<span class="rail-account-text"><strong>${escapeHtml(displayName())}</strong><span data-sync="${syncState}">${syncText[syncState]}</span></span></a>` : '');
     document.body.dataset.route = route();
     applyWallpaper();
   }
@@ -799,7 +801,7 @@
   async function startSession(user) {
     document.body.dataset.auth = 'loading';
     storageKey = `${APP_KEY}:${user.uid}`;
-    session = { uid: user.uid, email: user.email, chunks: 0 };
+    session = { uid: user.uid, email: user.email, chunks: 0, name: user.name || '', photo: user.photo || '', providers: user.providers || [], created: user.created || '' };
     const local = validState(readJson(storageKey)) ? readJson(storageKey) : null;
     const localDirty = local && (local.updatedAt || 0) > (Number(localStorage.getItem(`${storageKey}:synced`)) || 0);
     let remote = null, offline = false;
@@ -825,7 +827,8 @@
     render();
   }
   function showGate(error = '') {
-    session = null; clearTimeout(pushTimer); storageKey = APP_KEY; accountDeleting = false;
+    session = null; clearTimeout(pushTimer); storageKey = APP_KEY; accountDeleting = false; passwordFormOpen = false;
+    if (route() === 'account') history.replaceState(null, '', '#/overview');
     data = migrate({ version: 2, transactions: [], categories: [], brandOverrides: {} });
     $('appContent').innerHTML = '';
     document.querySelectorAll('dialog[open]').forEach(dialog => dialog.close());
@@ -856,6 +859,36 @@
       try { localStorage.setItem(storageKey, JSON.stringify(data)); localStorage.setItem(`${storageKey}:synced`, String(data.updatedAt || 0)); } catch {}
       render(); toast('Načetl jsem novější data z jiného zařízení.');
     } catch {}
+  }
+  function displayName() { return session?.name || session?.email?.split('@')[0] || 'Účet'; }
+  function hasProvider(id) { return !!session?.providers?.includes(id); }
+  function avatarMarkup(size = 44) {
+    const initial = escapeHtml((displayName()[0] || '?').toLocaleUpperCase('cs'));
+    return `<span class="avatar" style="--size:${size}px" aria-hidden="true">${session?.photo ? `<img src="${escapeHtml(session.photo)}" alt="" referrerpolicy="no-referrer" onerror="this.replaceWith(document.createTextNode('${initial}'))">` : initial}</span>`;
+  }
+  function refreshProfile(profile) { if (session && profile) Object.assign(session, { name: profile.name, photo: profile.photo, providers: profile.providers, email: profile.email }); }
+  function accountLinkPanel() {
+    if (!session) return '';
+    return `<a class="panel link-panel account-link" href="#/account"><span class="profile">${avatarMarkup(48)}<span class="link-panel-text"><h2>${escapeHtml(displayName())}</h2><span class="field-help">${escapeHtml(session.email || '')} · <span data-sync="${syncState}">${syncText[syncState]}</span></span></span></span>${uiIcon('right', 'link-panel-arrow')}</a>`;
+  }
+  function renderAccount() {
+    if (!session) return `<div class="page-head"><h1>Účet</h1><a class="inline-link page-back" href="#/categories">${uiIcon('left')}Nastavení</a></div><section class="panel"><p class="field-help">Tahle kopie aplikace běží bez účtu, data jsou jen v tomto prohlížeči. Účet a přihlášení přes Google funguje na webu.</p></section>`;
+    const created = session.created ? new Date(session.created) : null;
+    const googleOn = hasProvider('google.com'), passwordOn = hasProvider('password');
+    const passwordForm = passwordFormOpen ? (passwordOn
+      ? `<form id="passwordForm" class="method-form"><label>Současné heslo<input type="password" name="current" autocomplete="current-password" required></label><label>Nové heslo<input type="password" name="next" autocomplete="new-password" minlength="8" required></label><div class="form-actions"><button type="submit" class="primary-button">Změnit heslo</button><button type="button" class="text-button" data-action="toggle-password-form">Zrušit</button></div></form>`
+      : `<form id="addPasswordForm" class="method-form"><input type="email" name="email" autocomplete="username" value="${escapeHtml(session.email || '')}" hidden><label>Nové heslo<input type="password" name="next" autocomplete="new-password" minlength="8" required></label><span class="field-help">Pak se přihlásíš i e-mailem ${escapeHtml(session.email || '')} a heslem, třeba na zařízení bez Googlu.</span><div class="form-actions"><button type="submit" class="primary-button">Nastavit heslo</button><button type="button" class="text-button" data-action="toggle-password-form">Zrušit</button></div></form>`) : '';
+    const deleteBox = accountDeleting ? `<form id="deleteAccountForm" class="delete-box"><p><strong>Smazat účet a všechna data?</strong> Nejde to vrátit. Jestli chceš data zachovat, stáhni si nejdřív zálohu v Nastavení.</p>${passwordOn ? '<label>Pro potvrzení zadej heslo<input type="password" name="current" autocomplete="current-password" required></label>' : '<p class="field-help">Potvrdíš to přihlášením přes Google.</p>'}<div class="form-actions"><button type="submit" class="danger-button">Smazat natrvalo</button><button type="button" class="text-button" data-action="cancel-delete-account">Zpět</button></div></form>` : `<button type="button" class="danger-button" data-action="ask-delete-account">Smazat účet</button>`;
+    return `<div class="page-head"><h1>Účet</h1><a class="inline-link page-back" href="#/categories">${uiIcon('left')}Nastavení</a></div>
+      <section class="panel profile-panel"><div class="profile">${avatarMarkup(64)}<div class="profile-text"><h2>${escapeHtml(displayName())}</h2><span class="muted">${escapeHtml(session.email || '')}</span><span class="sync-pill" data-sync="${syncState}">${syncText[syncState]}</span></div></div>
+        <p class="field-help">Výdaje, kategorie, limity, opakované platby i loga se ukládají do účtu a jsou stejné na všech zařízeních${created ? `. Účet máš od ${dateShort.format(created)}` : ''}.</p>
+        <div class="form-actions"><button type="button" class="secondary-button" data-action="sign-out">Odhlásit se</button></div></section>
+      <section class="panel"><div class="panel-head"><h2>Přihlášení</h2><span class="muted small">${[googleOn && 'Google', passwordOn && 'heslo'].filter(Boolean).join(' a ')}</span></div>
+        <div class="method-list">
+          <div class="method-row"><span class="method-icon">${googleMark}</span><div class="manager-main"><span class="name">Google</span><span class="meta">${googleOn ? '<span class="on">Propojeno</span> · přihlášení jedním klepnutím' : 'Přihlašuj se jedním klepnutím bez hesla'}</span></div>${googleOn ? (passwordOn ? '<button type="button" class="text-button" data-action="unlink-google">Odpojit</button>' : '') : '<button type="button" class="secondary-button" data-action="link-google">Propojit</button>'}</div>
+          <div class="method-row"><span class="method-icon">${uiIcon('key')}</span><div class="manager-main"><span class="name">E-mail a heslo</span><span class="meta">${passwordOn ? `<span class="on">Nastaveno</span> · ${escapeHtml(session.email || '')}` : 'Nenastaveno'}</span></div>${passwordFormOpen ? '' : `<button type="button" class="secondary-button" data-action="toggle-password-form">${passwordOn ? 'Změnit heslo' : 'Nastavit heslo'}</button>`}</div>
+        </div>${passwordForm}</section>
+      <section class="panel"><div class="panel-head"><h2>Smazání účtu</h2></div><p class="field-help">Smaže účet i všechny výdaje v něm. Jestli chceš jen začít znovu na jiném zařízení, stačí se odhlásit.</p><div class="form-actions">${deleteBox}</div></section>`;
   }
   function accountPanel() {
     if (!session) return '';
@@ -889,6 +922,13 @@
       if (!email) { $('authError').textContent = 'Nejdřív nahoře vyplň e-mail, na který ti pošlu odkaz.'; $('authError').hidden = false; $('authForm').elements.email.focus(); return; }
       try { await cloud.resetPassword(email); $('authInfo').textContent = `Pokud účet ${email} existuje, přišel na něj e-mail s odkazem na nové heslo.`; $('authInfo').hidden = false; }
       catch (error) { $('authError').textContent = error.message; $('authError').hidden = false; }
+    });
+    $('authGoogle').addEventListener('click', async () => {
+      $('authError').hidden = true; $('authInfo').hidden = true;
+      const button = $('authGoogle'); button.disabled = true;
+      try { await cloud.signInGoogle(); }
+      catch (error) { $('authError').textContent = error.message; $('authError').hidden = false; }
+      button.disabled = false;
     });
     cloud.onUser(user => { if (user) startSession(user); else showGate(); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') pullIfNewer(); else if (session && syncState !== 'saved') push(); });
@@ -1067,12 +1107,12 @@
     const categoryBody = `<div class="category-manager">${managers}</div><form id="newCategoryForm" class="new-category"><label class="field">Nová kategorie<input type="text" name="name" maxlength="40" placeholder="Název kategorie" required></label><button type="button" class="select-button" data-action="pick-icon" data-name="_draft">${icon(draftIcon)}<span>Vybrat ikonu</span></button><button type="submit" class="primary-button">Přidat kategorii</button></form>`;
     const logoBody = `<p class="field-help">Známé značky se přiřadí samy podle názvu platby. K ostatním můžeš nahrát vlastní obrázek. Logo konkrétního obchodu změníš nebo vypneš i v úpravě platby.</p>${customList ? `<h3 class="sub-head">Vlastní a vypnutá loga</h3><div class="custom-logo-list">${customList}</div>` : ''}<h3 class="sub-head">Platby bez loga</h3><div class="unmatched-list">${unmatched.map(name => `<button type="button" class="choice-button" data-action="upload-logo" data-name="${escapeHtml(name)}">${uiIcon(data.brandOverrides[merchantKey(name)] ? 'check' : 'plus')}${escapeHtml(name)}</button>`).join('') || '<span class="field-help">Všechny platby mají logo.</span>'}</div><h3 class="sub-head">Připravená loga</h3><div class="logos-grid">${logos}</div>`;
     return `<div class="page-head"><h1>Nastavení</h1></div>
+      ${accountLinkPanel()}
       <a class="panel link-panel" href="#/limits"><span class="link-panel-text"><h2>Limity</h2><span class="field-help">${limitSummary} · ${limitCount ? `${limitCount} ${limitCount === 1 ? 'kategorie' : limitCount < 5 ? 'kategorie' : 'kategorií'} s limitem` : 'kategorie bez limitů'}</span></span>${uiIcon('right', 'link-panel-arrow')}</a>
       ${disclosure('looks', 'Vzhled', `<span class="current-wallpaper"><i style="background-image:url(assets/bg/${currentWallpaper().id}-nahled.webp)"></i>${escapeHtml(currentWallpaper().name)} · ${wallpapers.length} tapet</span>`, `<p class="field-help">Barva a vzor pod sklem. Mění se v celé aplikaci.</p><div class="wallpaper-grid" role="radiogroup" aria-label="Tapeta">${wallpaperButtons(true)}</div>`)}
       ${disclosure('categories', 'Kategorie', `${data.categories.length} kategorií`, categoryBody)}
       ${disclosure('recurring', 'Opakované platby', data.recurring.length ? `${data.recurring.length} ${data.recurring.length === 1 ? 'platba' : data.recurring.length < 5 ? 'platby' : 'plateb'} · ${wholeCrowns.format(data.recurring.reduce((sum, item) => sum + Math.abs(item.cents), 0) / 100)} měsíčně` : 'žádné', recurringBody)}
       ${disclosure('logos', 'Loga obchodů', `${Object.keys(logoNames).length + customLogos} log${missing ? ` · ${missing} bez loga` : ''}`, logoBody)}
-      ${accountPanel()}
       <section class="panel"><div class="panel-head"><h2>Data a záloha</h2></div><p class="field-help">${session ? 'Data jsou uložená v tvém účtu. Záloha v souboru se hodí pro přenos z jiné instalace nebo jako pojistka.' : 'Všechno se ukládá jen v tomto prohlížeči. Zálohu si stáhni před vymazáním dat prohlížeče nebo přechodem na jiné zařízení.'}</p><div class="form-actions"><button type="button" class="secondary-button" data-action="download-backup">Stáhnout zálohu JSON</button><button type="button" class="secondary-button" data-action="export-csv-all">Stáhnout platby jako CSV</button><button type="button" class="secondary-button" data-action="restore-backup">Obnovit ze zálohy</button></div></section>`;
   }
   function monthName(key) { const [y, m] = String(key).split('-').map(Number); const text = monthFormat.format(new Date(y, m - 1, 1)); return text; }
@@ -1293,7 +1333,7 @@
     const page = route();
     const content = $('appContent');
     hideTip();
-    content.innerHTML = page === 'transactions' ? renderTransactions() : page === 'analysis' ? renderAnalysis() : page === 'compare' ? renderCompare() : page === 'add' ? renderAdd() : page === 'limits' ? renderLimits() : page === 'categories' ? renderCategories() : renderOverview();
+    content.innerHTML = page === 'transactions' ? renderTransactions() : page === 'analysis' ? renderAnalysis() : page === 'compare' ? renderCompare() : page === 'add' ? renderAdd() : page === 'limits' ? renderLimits() : page === 'categories' ? renderCategories() : page === 'account' ? renderAccount() : renderOverview();
     if (page === 'transactions') renderTransactionResults();
     if (lastRoute !== null && lastRoute !== page) window.scrollTo(0, 0);
     const enter = animateNext || lastRoute !== page;
@@ -1564,6 +1604,9 @@
     else if (action === 'open-category') { filters.category = value; filters.counting = 'all'; location.hash = '#/transactions'; render(); }
     else if (action === 'set-wallpaper') setWallpaper(value);
     else if (action === 'sign-out') { (async () => { if (syncState !== 'saved') await push(); const key = storageKey; try { await cloud.signOut(); localStorage.removeItem(key); localStorage.removeItem(`${key}:synced`); } catch (error) { toast(error.message); } })(); }
+    else if (action === 'toggle-password-form') { passwordFormOpen = !passwordFormOpen; render(); document.querySelector('.method-form input:not([hidden])')?.focus(); }
+    else if (action === 'link-google') { button.disabled = true; cloud.linkGoogle().then(profile => { refreshProfile(profile); render(); toast('Google je propojený. Příště se můžeš přihlásit jedním klepnutím.'); }).catch(error => { toast(error.message); button.disabled = false; }); }
+    else if (action === 'unlink-google') { (async () => { if (!await askConfirm('Odpojit Google?', 'Dál se budeš přihlašovat e-mailem a heslem. Propojit ho jde kdykoli znovu.', 'Odpojit')) return; try { refreshProfile(await cloud.unlinkGoogle()); render(); toast('Google je odpojený.'); } catch (error) { toast(error.message); } })(); }
     else if (action === 'ask-delete-account') { accountDeleting = true; render(); document.querySelector('#deleteAccountForm input')?.focus(); }
     else if (action === 'cancel-delete-account') { accountDeleting = false; render(); }
     else if (action === 'pick-compare-month') openMonthPicker(value);
@@ -1717,7 +1760,12 @@
       const values = new FormData(form); const next = String(values.get('next') || '');
       if (next.length < 8) { toast('Nové heslo musí mít aspoň 8 znaků.'); form.elements.next.focus(); return; }
       const button = form.querySelector('button[type="submit"]'); button.disabled = true;
-      cloud.changePassword(String(values.get('current') || ''), next).then(() => { form.reset(); toast('Heslo je změněné.'); }).catch(error => toast(error.message)).finally(() => { button.disabled = false; });
+      cloud.changePassword(String(values.get('current') || ''), next).then(() => { form.reset(); passwordFormOpen = false; render(); toast('Heslo je změněné.'); }).catch(error => toast(error.message)).finally(() => { button.disabled = false; });
+    } else if (form.id === 'addPasswordForm') {
+      const next = String(new FormData(form).get('next') || '');
+      if (next.length < 8) { toast('Heslo musí mít aspoň 8 znaků.'); form.elements.next.focus(); return; }
+      const button = form.querySelector('button[type="submit"]'); button.disabled = true;
+      cloud.addPassword(next).then(profile => { refreshProfile(profile); passwordFormOpen = false; render(); toast('Heslo je nastavené.'); }).catch(error => { toast(error.message); button.disabled = false; });
     } else if (form.id === 'deleteAccountForm') {
       const button = form.querySelector('button[type="submit"]'); button.disabled = true;
       const key = storageKey, chunks = session.chunks;

@@ -1,5 +1,5 @@
 // Výdaje — offline režim. Při změně souborů zvedni číslo verze.
-const VERSION = 'vydaje-v2-9';
+const VERSION = 'vydaje-v2-10';
 const CORE = ['./', 'index.html', 'styles/app.css', 'src/app.js', 'src/cloud.js', 'src/vydaje-data.js', 'manifest.webmanifest',
   'assets/fonts/geist-latin-wght-normal.woff2', 'assets/fonts/geist-latin-ext-wght-normal.woff2',
   'assets/icon-192.png', 'assets/icon-512.png', 'assets/bg/bordo.webp'];
