@@ -15,7 +15,7 @@
   const $ = id => document.getElementById(id);
   const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
   const normalize = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('cs').replace(/[^a-z0-9]+/g, ' ').trim();
-  const iconNames = ['vše', 'jídlo', 'benzín', 'parkování', 'předplatné', 'zábava', 'nákup', 'převod', 'elektronika', 'auto', 'drogerie', 'ostatní', 'kočka', 'domov', 'zdraví', 'cesta', 'oblečení', 'sport', 'dárek', 'práce'];
+  const iconNames = ['vše', 'jídlo', 'restaurace', 'kafe', 'pití', 'benzín', 'parkování', 'auto', 'doprava', 'kolo', 'cestování', 'cesta', 'předplatné', 'zábava', 'hry', 'hudba', 'film', 'knihy', 'nákup', 'oblečení', 'elektronika', 'počítač', 'telefon', 'drogerie', 'kadeřník', 'zdraví', 'sport', 'domov', 'domácnost', 'bydlení', 'energie', 'nářadí', 'zahrada', 'kočka', 'pes', 'děti', 'rodina', 'osoba', 'srdce', 'dárek', 'vzdělání', 'práce', 'investice', 'odvody', 'pojištění', 'účty', 'karta', 'převod', 'ostatní'];
   const iconPaths = {
     'vše': '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
     'jídlo': '<circle cx="12" cy="12" r="6"/><path d="M3 3v7m2-7v7m-2 0h2m0 0v11M20 3v18m0-18c-3 2-3 7 0 8"/>',
@@ -31,16 +31,49 @@
     'ostatní': '<circle cx="6" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="18" cy="12" r="1"/>',
     'kočka': '<path d="M4 9 5 3l5 3h4l5-3 1 6v6a8 8 0 0 1-16 0V9ZM9 13h.01M15 13h.01m-5 4 2 1 2-1M3 16l4 1m14-1-4 1"/>',
     'domov': '<path d="m3 11 9-8 9 8v10H3V11ZM9 21v-7h6v7"/>',
-    'zdraví': '<path d="M12 21 4 13a5 5 0 0 1 7-7l1 1 1-1a5 5 0 0 1 7 7l-8 8Z"/>',
+    'zdraví': '<path d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6V3Z"/>',
     'cesta': '<path d="m3 12 18-7-6 16-3-7-9-2Zm9 2 4-5"/>',
     'oblečení': '<path d="m8 3-5 4 3 4 2-2v12h8V9l2 2 3-4-5-4-2 2h-4L8 3Z"/>',
     'sport': '<path d="M3 9v6m3-9v12m3-9v6m6-6v6m3-9v12m3-9v6M9 12h6"/>',
     'dárek': '<rect x="3" y="9" width="18" height="12" rx="1"/><path d="M2 9h20M12 9v12M12 9C8 9 6 8 6 6a2 2 0 0 1 4 0l2 3Zm0 0c4 0 6-1 6-3a2 2 0 0 0-4 0l-2 3Z"/>',
     'práce': '<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M9 7V4h6v3M3 13h18M10 13v2h4v-2"/>',
+    'restaurace': '<path d="M3 2v7a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V2M7 2v20M21 15V2a5 5 0 0 0-5 5v6a2 2 0 0 0 2 2h3Zm0 0v7"/>',
+    'kafe': '<path d="M10 2v2m4-2v2M6 2v2m10 4a1 1 0 0 1 1 1v8a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V9a1 1 0 0 1 1-1h14a4 4 0 1 1 0 8h-1"/>',
+    'pití': '<path d="M8 22h8M7 10h10M12 15v7m0-7a5 5 0 0 0 5-5c0-2-.5-4-2-8H9c-1.5 4-2 6-2 8a5 5 0 0 0 5 5Z"/>',
+    'doprava': '<rect x="4" y="3" width="16" height="16" rx="2"/><path d="M4 6 2 7m20 0-2-1M10 6h4M4 11h16M8 15h.01M16 15h.01M6 19v2m12 0v-2"/>',
+    'kolo': '<circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/>',
+    'cestování': '<path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2Z"/>',
+    'hry': '<path d="M6 11h4M8 9v4m7-1h.01M18 10h.01M17.32 5H6.68a4 4 0 0 0-3.98 3.59C2.6 9.42 2 14.46 2 16a3 3 0 0 0 3 3c1 0 1.5-.5 2-1l1.41-1.41A2 2 0 0 1 9.83 16h4.34a2 2 0 0 1 1.41.59L17 18c.5.5 1 1 2 1a3 3 0 0 0 3-3c0-1.55-.6-6.58-.69-7.26A4 4 0 0 0 17.32 5Z"/>',
+    'hudba': '<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',
+    'film': '<rect x="2" y="7" width="20" height="15" rx="2"/><path d="m17 2-5 5-5-5"/>',
+    'knihy': '<path d="M12 7v14M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3H3Z"/>',
+    'počítač': '<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/>',
+    'telefon': '<rect x="5" y="2" width="14" height="20" rx="2"/><path d="M12 18h.01"/>',
+    'kadeřník': '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.12 8.12 12 12m8-8L8.12 15.88M14.8 14.8 20 20"/>',
+    'domácnost': '<path d="M20 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v3M2 16a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-5a2 2 0 0 0-4 0v2H6v-2a2 2 0 0 0-4 0v5Zm2 2v2m16-2v2"/>',
+    'bydlení': '<path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18H6ZM6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2m12-13h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4m-4 4h4m-4 4h4m-4 4h4"/>',
+    'energie': '<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+    'nářadí': '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.1-3.1c.32-.32.86-.22.98.22a6 6 0 0 1-8.26 7.06l-7.91 7.91a2.12 2.12 0 0 1-3-3l7.91-7.91a6 6 0 0 1 7.06-8.26c.44.12.54.66.22.98L14.7 6.3Z"/>',
+    'zahrada': '<path d="M7 20h10M10 20c5.5-2.5.8-6.4 3-10M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.5.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8ZM14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1-1 1.6-2.3 1.7-4.6-2.7.1-4 1-4.9 2Z"/>',
+    'pes': '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/><path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.05Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10H9Z"/>',
+    'děti': '<path d="M9 12h.01M15 12h.01M10 16c.5.3 1.2.5 2 .5s1.5-.2 2-.5M19 6.3a9 9 0 0 1 1.8 3.9 2 2 0 0 1 0 3.6 9 9 0 0 1-17.6 0 2 2 0 0 1 0-3.6A9 9 0 0 1 12 3c2 0 3.5 1.1 3.5 2.5S14.6 8 13.5 8c-.8 0-1.5-.4-1.5-1"/>',
+    'rodina': '<circle cx="9" cy="7" r="4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+    'osoba': '<circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/>',
+    'srdce': '<path d="M12 21 4 13a5 5 0 0 1 7-7l1 1 1-1a5 5 0 0 1 7 7l-8 8Z"/>',
+    'vzdělání': '<path d="M21.42 10.92a1 1 0 0 0-.02-1.84L12.83 5.18a2 2 0 0 0-1.66 0L2.6 9.08a1 1 0 0 0 0 1.83l8.57 3.91a2 2 0 0 0 1.66 0l8.59-3.9ZM22 10v6M6 12.5V16a6 3 0 0 0 12 0v-3.5"/>',
+    'investice': '<path d="M22 7 13.5 15.5l-5-5L2 17"/><path d="M16 7h6v6"/>',
+    'odvody': '<path d="M3 22h18M6 18v-7m4 7v-7m4 7v-7m4 7v-7M12 2l8 5H4l8-5Z"/>',
+    'pojištění': '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1v7Z"/>',
+    'účty': '<path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1-2-1ZM16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8m4 1.5v-11"/>',
+    'karta': '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/>',
     'upravit': '<path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L8 18l-4 1 1-4L16.5 3.5Z"/>',
     'smazat': '<path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/>'
   };
-  const defaultIcons = { 'Jídlo': 'jídlo', 'Benzín': 'benzín', 'Parkování': 'parkování', 'Předplatné': 'předplatné', 'Zábava': 'zábava', 'Rozmar': 'nákup', 'Nepočítá se': 'převod', 'Elektronika': 'elektronika', 'Auto': 'auto', 'Drogerie': 'drogerie', 'Nezařazeno': 'ostatní', 'Kočka': 'kočka', 'Domácnost': 'domov' };
+  const defaultIcons = { 'Jídlo': 'jídlo', 'Benzín': 'benzín', 'Parkování': 'parkování', 'Předplatné': 'předplatné', 'Zábava': 'zábava', 'Rozmar': 'nákup', 'Nepočítá se': 'převod', 'Elektronika': 'elektronika', 'Auto': 'auto', 'Drogerie': 'drogerie', 'Nezařazeno': 'ostatní', 'Kočka': 'kočka', 'Domácnost': 'domácnost', 'Bydlení': 'bydlení', 'Odvody': 'odvody', 'Investice': 'investice', 'Hry': 'hry', 'Doprava': 'doprava', 'Miky': 'osoba', 'Cestování': 'cestování', 'Rodina': 'rodina', 'Patrice': 'srdce' };
+  // Kategorie, které uživatel 20. 11. 2026 chtěl mít vždy k dispozici.
+  const addedCategories = ['Hry', 'Doprava', 'Cestování', 'Miky', 'Rodina'];
+  // Jednorázové přeznačení ikon u kategorií se stejným názvem (bez diakritiky a velikosti písmen).
+  const renamedIcons = { odvody: 'odvody', investice: 'investice', bydleni: 'bydlení', domacnost: 'domácnost', patrice: 'srdce', hry: 'hry', doprava: 'doprava', miky: 'osoba', cestovani: 'cestování', rodina: 'rodina' };
   const logoRules = [
     [/apple/, 'apple'], [/alza/, 'alza'], [/albert/, 'albert'], [/billa/, 'billa'],
     [/^ono |tank ono/, 'ono'], [/aluha/, 'aluha'], [/rohlik/, 'rohlik'],
@@ -94,7 +127,7 @@
     [/(?:^| )(?:google)/, 'google'],
     [/(?:^| )(?:steam)/, 'steam'],
     [/(?:^| )(?:microsoft)/, 'microsoft'],
-    [/(?:^| )(?:o2 cz|o2 czech)/, 'o2'],
+    [/(?:^| )o2(?: |$)/, 'o2'],
     [/(?:^| )(?:t mobile|tmobile)/, 'tmobile'],
     [/(?:^| )(?:vodafone)/, 'vodafone'],
     [/(?:^| )(?:cez)/, 'cez'],
@@ -133,13 +166,24 @@
     [/(?:^| )(?:sbazar)/, 'sbazar'],
     [/(?:^| )(?:bazos)/, 'bazos'],
     [/(?:^| )(?:ticketportal)/, 'ticketportal'],
-    [/(?:^| )(?:dpp)/, 'dpp']
+    [/(?:^| )(?:dpp)/, 'dpp'],
+    // Doplněno 20. 11. 2026 (ikony aplikací z App Store a oficiální favicony, viz docs/loga-zdroje.json).
+    [/(?:^| )dpmb/, 'dpmb'],
+    [/(?:^| )(?:eon|e on)(?: |$)/, 'eon'],
+    [/(?:^| )flix ?bus/, 'flixbus'],
+    [/(?:^| )liftago/, 'liftago'],
+    [/(?:^| )discord/, 'discord'],
+    [/(?:^| )twitch/, 'twitch'],
+    [/(?:^| )gog com|(?:^| )gog(?: |$)/, 'gog'],
+    [/(?:^| )instant gaming/, 'instantgaming'],
+    [/(?:^| )nintendo/, 'nintendo'],
+    [/(?:^| )skoda auto|(?:^| )myskoda/, 'skoda']
   ];
-  const logoNames = { apple:'Apple', alza:'Alza', albert:'Albert', billa:'BILLA', ono:'Tank ONO', aluha:'Aluha', rohlik:'Rohlík', playlive:'PlayLive', pid:'PID Lítačka', wolt:'Wolt', openai:'OpenAI', kaufland:'Kaufland', action:'Action', globus:'Globus', dm:'dm', adobe:'Adobe', anthropic:'Anthropic', rossmann:'Rossmann', eurooil:'EuroOil', utenisu:'U Tenisu', bb:'Bageterie Boulevard', sunny:'Sunny Market', tesco:'Tesco', norma:'Norma', mol:'MOL', netflix:'Netflix', spotify:'Spotify', drmax:'Dr.Max', ppl:'PPL', burgerking:'Burger King', mall:'Allegro (Mall)', youtube:'YouTube', lidl:'Lidl', makro:'Makro', coop:'COOP Jednota', kosik:'Košík', teta:'Teta', benu:'Benu', pilulka:'Pilulka', notino:'Notino', orlen:'Orlen', shell:'Shell', omv:'OMV', mcdonalds:'McDonald\'s', kfc:'KFC', starbucks:'Starbucks', costa:'Costa Coffee', ikea:'IKEA', decathlon:'Decathlon', hornbach:'Hornbach', obi:'OBI', bauhaus:'Bauhaus', czc:'CZC', pepco:'Pepco', tedi:'TEDi', zara:'Zara', lindex:'Lindex', bolt:'Bolt', uber:'Uber', foodora:'Foodora', cd:'České dráhy', regiojet:'RegioJet', leoexpress:'Leo Express', google:'Google', steam:'Steam', microsoft:'Microsoft', o2:'O2', tmobile:'T-Mobile', vodafone:'Vodafone', cez:'ČEZ', packeta:'Zásilkovna (Packeta)', douglas:'Douglas', yverocher:'Yves Rocher', kiko:'KIKO', deichmann:'Deichmann', nike:'Nike', adidas:'adidas', sportisimo:'Sportisimo', ryanair:'Ryanair', wizzair:'Wizz Air', booking:'Booking.com', airbnb:'Airbnb', aliexpress:'AliExpress', temu:'Temu', shein:'SHEIN', playstation:'PlayStation', disneyplus:'Disney+', xbox:'Xbox', github:'GitHub', canva:'Canva', notion:'Notion', figma:'Figma', duolingo:'Duolingo', revolut:'Revolut', csas:'Česká spořitelna', kb:'Komerční banka', csob:'ČSOB', fio:'Fio banka', mbank:'mBank', hbomax:'HBO Max', lego:'LEGO', tchibo:'Tchibo', sbazar:'Sbazar', bazos:'Bazoš', ticketportal:'Ticketportal', dpp:'DPP' };
+  const logoNames = { apple:'Apple', alza:'Alza', albert:'Albert', billa:'BILLA', ono:'Tank ONO', aluha:'Aluha', rohlik:'Rohlík', playlive:'PlayLive', pid:'PID Lítačka', wolt:'Wolt', openai:'OpenAI', kaufland:'Kaufland', action:'Action', globus:'Globus', dm:'dm', adobe:'Adobe', anthropic:'Claude (Anthropic)', rossmann:'Rossmann', eurooil:'EuroOil', utenisu:'U Tenisu', bb:'Bageterie Boulevard', sunny:'Sunny Market', tesco:'Tesco', norma:'Norma', mol:'MOL', netflix:'Netflix', spotify:'Spotify', drmax:'Dr.Max', ppl:'PPL', burgerking:'Burger King', mall:'Allegro (Mall)', youtube:'YouTube', lidl:'Lidl', makro:'Makro', coop:'COOP Jednota', kosik:'Košík', teta:'Teta', benu:'Benu', pilulka:'Pilulka', notino:'Notino', orlen:'Orlen', shell:'Shell', omv:'OMV', mcdonalds:'McDonald\'s', kfc:'KFC', starbucks:'Starbucks', costa:'Costa Coffee', ikea:'IKEA', decathlon:'Decathlon', hornbach:'Hornbach', obi:'OBI', bauhaus:'Bauhaus', czc:'CZC', pepco:'Pepco', tedi:'TEDi', zara:'Zara', lindex:'Lindex', bolt:'Bolt', uber:'Uber', foodora:'Foodora', cd:'České dráhy', regiojet:'RegioJet', leoexpress:'Leo Express', google:'Google', steam:'Steam', microsoft:'Microsoft', o2:'O2', tmobile:'T-Mobile', vodafone:'Vodafone', cez:'ČEZ', packeta:'Zásilkovna (Packeta)', douglas:'Douglas', yverocher:'Yves Rocher', kiko:'KIKO', deichmann:'Deichmann', nike:'Nike', adidas:'adidas', sportisimo:'Sportisimo', ryanair:'Ryanair', wizzair:'Wizz Air', booking:'Booking.com', airbnb:'Airbnb', aliexpress:'AliExpress', temu:'Temu', shein:'SHEIN', playstation:'PlayStation', disneyplus:'Disney+', xbox:'Xbox', github:'GitHub', canva:'Canva', notion:'Notion', figma:'Figma', duolingo:'Duolingo', revolut:'Revolut', csas:'Česká spořitelna', kb:'Komerční banka', csob:'ČSOB', fio:'Fio banka', mbank:'mBank', hbomax:'HBO Max', lego:'LEGO', tchibo:'Tchibo', sbazar:'Sbazar', bazos:'Bazoš', ticketportal:'Ticketportal', dpp:'DPP', dpmb:'DPMB', eon:'E.ON', flixbus:'FlixBus', liftago:'Liftago', discord:'Discord', twitch:'Twitch', gog:'GOG', instantgaming:'Instant Gaming', nintendo:'Nintendo', skoda:'Škoda' };
   // Loga, která jsou sama čtvercovou dlaždicí s barevným pozadím: vyplní celou dlaždici, jinak by uvnitř bílé dlaždice byl vidět ostrý čtverec.
-  const tileLogos = new Set(['adobe', 'bb', 'billa', 'pid', 'playlive', 'sunny', 'wolt', 'eurooil', 'norma', 'spotify', 'drmax', 'airbnb', 'bolt', 'canva', 'cd', 'cez', 'decathlon', 'deichmann', 'disneyplus', 'figma', 'foodora', 'hbomax', 'hornbach', 'kb', 'kfc', 'kiko', 'lego', 'leoexpress', 'lidl', 'makro', 'microsoft', 'orlen', 'regiojet', 'ryanair', 'shein', 'shell', 'sportisimo', 'starbucks', 'temu', 'tmobile', 'wizzair', 'yverocher']);
+  const tileLogos = new Set(['adobe', 'bb', 'billa', 'pid', 'playlive', 'sunny', 'wolt', 'eurooil', 'norma', 'spotify', 'drmax', 'airbnb', 'bolt', 'canva', 'cd', 'cez', 'decathlon', 'deichmann', 'disneyplus', 'figma', 'foodora', 'hbomax', 'hornbach', 'kb', 'kfc', 'kiko', 'lego', 'leoexpress', 'lidl', 'makro', 'microsoft', 'orlen', 'regiojet', 'ryanair', 'shein', 'shell', 'sportisimo', 'starbucks', 'temu', 'tmobile', 'wizzair', 'yverocher', 'action', 'anthropic', 'burgerking', 'discord', 'dpmb', 'liftago', 'mall', 'netflix', 'o2', 'openai', 'ppl', 'rohlik', 'skoda', 'twitch', 'youtube', 'flixbus', 'instantgaming', 'nintendo']);
   function logoImg(id, lazy = false) { return `<img src="${logoPath(id)}" alt=""${tileLogos.has(id) ? ' class="tile"' : ''}${lazy ? ' loading="lazy"' : ''}>`; }
-  function logoPath(id) { return `assets/logos/${id}.${id === 'eurooil' ? 'jpg' : 'png'}`; }
+  function logoPath(id) { return `assets/logos/${id}.png`; }
   const ui = {
     close: '<path d="M6 6l12 12M18 6 6 18"/>', check: '<path d="m5 12.5 4.5 4.5L19 7.5"/>', chevron: '<path d="m7 10 5 5 5-5"/>',
     plus: '<path d="M12 5v14M5 12h14"/>', right: '<path d="m9.5 6 6 6-6 6"/>', left: '<path d="m14.5 6-6 6 6 6"/>', down: '<path d="M12 5v14m-6-6 6 6 6-6"/>',
@@ -147,7 +191,7 @@
   };
   function uiIcon(name, className = '') { return `<svg class="icon ${className}" viewBox="0 0 24 24" aria-hidden="true">${ui[name]}</svg>`; }
   // Každá kategorie má jednu stálou barvu ve všech grafech.
-  const categoryColors = { 'Jídlo': '#F76707', 'Benzín': '#2F6BFF', 'Parkování': '#4DABF7', 'Předplatné': '#7950F2', 'Zábava': '#E64980', 'Rozmar': '#F2B705', 'Elektronika': '#12B886', 'Auto': '#1098AD', 'Drogerie': '#C2255C', 'Nezařazeno': '#868E96', 'Nepočítá se': '#CED4DA', 'Kočka': '#A9743A', 'Domácnost': '#82C91E' };
+  const categoryColors = { 'Jídlo': '#F76707', 'Benzín': '#2F6BFF', 'Parkování': '#4DABF7', 'Předplatné': '#7950F2', 'Zábava': '#E64980', 'Rozmar': '#F2B705', 'Elektronika': '#12B886', 'Auto': '#1098AD', 'Drogerie': '#C2255C', 'Nezařazeno': '#868E96', 'Nepočítá se': '#CED4DA', 'Kočka': '#A9743A', 'Domácnost': '#82C91E', 'Hry': '#5C7CFA', 'Doprava': '#1C7ED6', 'Cestování': '#15AABF', 'Miky': '#0CA678', 'Rodina': '#E8590C', 'Bydlení': '#D9480F', 'Odvody': '#868E3A', 'Investice': '#2B8A3E', 'Patrice': '#E03174' };
   const extraColors = ['#0CA678', '#D9480F', '#5F3DC4', '#74B816', '#C92A2A', '#1971C2', '#E8590C', '#9C36B5'];
   function catColor(name) {
     if (categoryColors[name]) return categoryColors[name];
@@ -206,11 +250,19 @@
   function validState(value) {
     return value && (value.version === 1 || value.version === 2) && Array.isArray(value.transactions) && Array.isArray(value.categories) && value.brandOverrides && typeof value.brandOverrides === 'object';
   }
+  let categoryMigrated = false;
   // Verze 2 přidává měsíční limit (budgetCents) a tapetu (wallpaper).
   function migrate(value) {
     value.version = 2;
     if (!Number.isInteger(value.budgetCents) || value.budgetCents <= 0) value.budgetCents = null;
-    if (!wallpapers.some(item => item.id === value.wallpaper)) value.wallpaper = 'kobalt';
+    if (!wallpapers.some(item => item.id === value.wallpaper)) value.wallpaper = 'bordo';
+    // categorySet 1 (20. 11. 2026): nové ikony u známých názvů a kategorie Hry, Doprava, Cestování, Miky, Rodina.
+    if (value.categorySet !== 1 && Array.isArray(value.categories)) {
+      value.categories.forEach(item => { const next = renamedIcons[normalize(item.name)]; if (next) item.icon = next; });
+      addedCategories.forEach(name => { if (!value.categories.some(item => normalize(item.name) === normalize(name))) value.categories.push({ name, icon: defaultIcons[name] }); });
+      value.categorySet = 1;
+      categoryMigrated = true;
+    }
     if (!value.categoryBudgets || typeof value.categoryBudgets !== 'object' || Array.isArray(value.categoryBudgets)) value.categoryBudgets = {};
     Object.keys(value.categoryBudgets).forEach(name => { if (!Number.isInteger(value.categoryBudgets[name]) || value.categoryBudgets[name] <= 0) delete value.categoryBudgets[name]; });
     return value;
@@ -699,8 +751,10 @@
     if (session?.uid !== user.uid) return;
     if (offline && !local) { showGate('Nepodařilo se načíst data. Zkontroluj internet a zkus to znovu.'); return; }
     if (remote && validState(remote) && !(localDirty && local.updatedAt > (remote.updatedAt || 0))) {
+      categoryMigrated = false;
       data = migrate(remote);
       session.chunks = Math.max(1, Math.ceil(data.transactions.length / 2000));
+      if (categoryMigrated) { categoryMigrated = false; setTimeout(save, 0); }
       try { localStorage.setItem(storageKey, JSON.stringify(data)); localStorage.setItem(`${storageKey}:synced`, String(data.updatedAt || 0)); } catch {}
       setSync('saved');
     } else {

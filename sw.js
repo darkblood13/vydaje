@@ -1,8 +1,8 @@
 // Výdaje — offline režim. Při změně souborů zvedni číslo verze.
-const VERSION = 'vydaje-v2-7';
+const VERSION = 'vydaje-v2-8';
 const CORE = ['./', 'index.html', 'styles/app.css', 'src/app.js', 'src/cloud.js', 'src/vydaje-data.js', 'manifest.webmanifest',
   'assets/fonts/geist-latin-wght-normal.woff2', 'assets/fonts/geist-latin-ext-wght-normal.woff2',
-  'assets/icon-192.png', 'assets/icon-512.png', 'assets/bg/kobalt.webp'];
+  'assets/icon-192.png', 'assets/icon-512.png', 'assets/bg/bordo.webp'];
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(VERSION).then(cache => cache.addAll(CORE)).then(() => self.skipWaiting()));
 });
